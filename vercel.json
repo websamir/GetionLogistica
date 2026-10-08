@@ -9,7 +9,9 @@
       "dest": "/index.html"
     }
   ],
-  "env": {
-    "API_BASE_URL": "https://getionlogistica.onrender.com"
+  "build": {
+    "env": {
+      "API_BASE_URL": "https://getionlogistica.onrender.com"
+    }
   }
 }
