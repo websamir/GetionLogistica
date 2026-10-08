@@ -713,9 +713,16 @@ function initials(name) {
 
 /* ═══════════════════════════════════════════════════════════════
    API HELPER
+   API_BASE_URL: vacío = mismo servidor (Render monolítico)
+                 URL   = backend externo (Render) desde Vercel
 ═══════════════════════════════════════════════════════════════ */
+const API_BASE_URL = (typeof __API_BASE_URL__ !== 'undefined' && __API_BASE_URL__)
+  ? __API_BASE_URL__
+  : '';
+
 async function api(method, url, body = null, isFile = false) {
   const token = localStorage.getItem('gl_token');
+  const fullUrl = API_BASE_URL + url;
   const opts = { method, headers: token ? { 'Authorization': `Bearer ${token}` } : {} };
   if (body && !isFile) {
     opts.headers['Content-Type'] = 'application/json';
@@ -723,7 +730,7 @@ async function api(method, url, body = null, isFile = false) {
   } else if (body && isFile) {
     opts.body = body;
   }
-  return fetch(url, opts);
+  return fetch(fullUrl, opts);
 }
 
 /* ═══════════════════════════════════════════════════════════════
