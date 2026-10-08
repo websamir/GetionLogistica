@@ -75,7 +75,12 @@ def login():
     if not usuario or not password:
         return jsonify(error='Usuario y contraseña requeridos'), 400
 
-    user = db.get_usuario(usuario)
+    try:
+        user = db.get_usuario(usuario)
+    except Exception as e:
+        import traceback
+        return jsonify(error='DB error', detail=traceback.format_exc()), 500
+
     if not user or user['password'] != hash_pass(password):
         return jsonify(error='Credenciales incorrectas'), 401
 
