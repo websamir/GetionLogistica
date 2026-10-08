@@ -17,7 +17,7 @@ import excel_parser as ep
 # ── App ───────────────────────────────────────────────────────
 app = Flask(
     __name__,
-    template_folder='templates',
+    template_folder='../frontend',
     static_folder='static'
 )
 app.config['JWT_SECRET_KEY']          = 'INVESAKK-LogSecretKey-802014471'

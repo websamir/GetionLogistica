@@ -8,6 +8,8 @@ env/
 
 # Base de datos local (no subir datos reales)
 backend/data/logistica.db
+backend/data/*.db-shm
+backend/data/*.db-wal
 backend/uploads/
 
 # Archivos temporales
