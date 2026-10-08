@@ -1193,7 +1193,7 @@ function renderResumen() {
   (function() {
     const el = document.getElementById('res-cond-bar-chart');
     if (!el || !conductores.length) return;
-    const W = 520, H = 160, padL = 32, padR = 12, padT = 24, padB = 36;
+    const W = 800, H = 220, padL = 36, padR = 16, padT = 28, padB = 44;
     const chartW = W - padL - padR, chartH = H - padT - padB;
     const data = conductores.map(c => {
       const s = getCondStats(c.clave);
@@ -1216,7 +1216,7 @@ function renderResumen() {
         <text x="${cx}" y="${totalY - 4}" text-anchor="middle" font-size="10" fill="var(--fg2)">${d.total}</text>
         <text x="${cx}" y="${yBase + 14}" text-anchor="middle" font-size="10" fill="var(--fg2)">${d.label}</text>`;
     }).join('');
-    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto">${legend}${bars}</svg>`;
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${legend}${bars}</svg>`;
   })();
 
   // Gráfica diaria global
@@ -1592,7 +1592,7 @@ function renderDailyChart(facts, color, elId = 'daily-chart') {
   const days = Object.keys(byDay).sort();
   if (!days.length) { el.innerHTML = '<p style="color:var(--fg2);font-size:12px">Sin entregas.</p>'; return; }
 
-  const W = 480, H = 140, padL = 28, padR = 12, padT = 18, padB = 32;
+  const W = 800, H = 200, padL = 32, padR = 16, padT = 22, padB = 40;
   const chartW = W - padL - padR;
   const chartH = H - padT - padB;
   const maxVal = Math.max(...days.map(d => byDay[d].total), 1);
