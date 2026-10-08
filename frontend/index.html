@@ -1166,6 +1166,12 @@ function renderResumen() {
       })()}
     </div>
 
+    <!-- Gráfica entregas por día -->
+    <div class="chart-wrap" style="margin-bottom:20px">
+      <div class="chart-label">Cantidad de entregas por día — Equipo completo</div>
+      <div id="res-daily-chart"></div>
+    </div>
+
     <!-- Categorías globales -->
     <div class="chart-wrap" style="margin-bottom:20px">
       <div class="chart-label">Categorías de entrega — Equipo completo</div>
@@ -1174,6 +1180,9 @@ function renderResumen() {
 
     <div class="conductor-grid" id="res-cards"></div>
   `;
+
+  // Gráfica diaria global
+  renderDailyChart(facturas, '#64748B', 'res-daily-chart');
 
   // Renderizar categorías globales usando todas las facturas
   renderStackChartEl(facturas, document.getElementById('res-stack-chart'));
@@ -1526,8 +1535,8 @@ function renderStackChart(facts, color) {
   renderStackChartEl(facts, document.getElementById('stack-chart'));
 }
 
-function renderDailyChart(facts, color) {
-  const el = document.getElementById('daily-chart');
+function renderDailyChart(facts, color, elId = 'daily-chart') {
+  const el = document.getElementById(elId);
   if (!el) return;
 
   // Agrupar entregas por fec_entr (solo las entregadas, no NTs sin entrega)
