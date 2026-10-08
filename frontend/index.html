@@ -1166,6 +1166,12 @@ function renderResumen() {
       })()}
     </div>
 
+    <!-- Gráfica Total vs A tiempo por conductor -->
+    <div class="chart-wrap" style="margin-bottom:20px">
+      <div class="chart-label">Total vs A tiempo — Por conductor</div>
+      <div id="res-cond-bar-chart"></div>
+    </div>
+
     <!-- Gráfica entregas por día -->
     <div class="chart-wrap" style="margin-bottom:20px">
       <div class="chart-label">Cantidad de entregas por día — Equipo completo</div>
@@ -1180,6 +1186,36 @@ function renderResumen() {
 
     <div class="conductor-grid" id="res-cards"></div>
   `;
+
+  // Gráfica Total vs A tiempo por conductor
+  (function() {
+    const el = document.getElementById('res-cond-bar-chart');
+    if (!el || !conductores.length) return;
+    const W = 520, H = 160, padL = 32, padR = 12, padT = 24, padB = 36;
+    const chartW = W - padL - padR, chartH = H - padT - padB;
+    const data = conductores.map(c => {
+      const s = getCondStats(c.clave);
+      return { label: c.short || c.clave, total: s.pedidos || 0, ok: s.a_tiempo || 0, color: COND_COLORS[c.clave] || '#64748B' };
+    });
+    const maxVal = Math.max(...data.map(d => d.total), 1);
+    const slotW = chartW / data.length;
+    const barW = Math.max(18, Math.min(48, slotW * 0.6));
+    const yBase = padT + chartH;
+    const legend = `<text x="${padL}" y="12" font-size="10" fill="#64748B">■ <tspan fill="#1e3a5f">Total</tspan>  ■ <tspan fill="#10B981">A tiempo</tspan></text>`;
+    const bars = data.map((d, i) => {
+      const cx = padL + i * slotW + slotW / 2;
+      const totalH = Math.max(2, Math.round((d.total / maxVal) * chartH));
+      const okH    = Math.round((d.ok    / maxVal) * chartH);
+      const totalY = yBase - totalH;
+      const okY    = yBase - okH;
+      return `
+        <rect x="${(cx - barW/2).toFixed(1)}" y="${totalY}" width="${barW}" height="${totalH}" fill="#1e3a5f" rx="3"/>
+        <rect x="${(cx - barW/2).toFixed(1)}" y="${okY}" width="${barW}" height="${okH}" fill="#10B981" rx="3"/>
+        <text x="${cx}" y="${totalY - 4}" text-anchor="middle" font-size="10" fill="var(--fg2)">${d.total}</text>
+        <text x="${cx}" y="${yBase + 14}" text-anchor="middle" font-size="10" fill="var(--fg2)">${d.label}</text>`;
+    }).join('');
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto">${legend}${bars}</svg>`;
+  })();
 
   // Gráfica diaria global
   renderDailyChart(facturas, '#64748B', 'res-daily-chart');
