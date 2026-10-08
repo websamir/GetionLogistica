@@ -1083,11 +1083,11 @@ function renderResumen() {
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:10px">
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
           <div style="font-size:11px;color:var(--fg2);margin-bottom:4px">Conductores</div>
-          <div style="font-size:20px;font-weight:800;color:${allStats.reduce((s,c)=>s+(c.bono_c||0),0)>=0?'#059669':'#DC2626'}">${fmtCurrency(allStats.reduce((s,c)=>s+(c.bono_c||0),0))}</div>
+          <div style="font-size:20px;font-weight:800;color:${allStats.reduce((s,c)=>s+Number(c.bono_c||0),0)>=0?'#059669':'#DC2626'}">${fmtCurrency(allStats.reduce((s,c)=>s+Number(c.bono_c||0),0))}</div>
         </div>
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
           <div style="font-size:11px;color:var(--fg2);margin-bottom:4px">Ayudantes</div>
-          <div style="font-size:20px;font-weight:800;color:${allStats.reduce((s,c)=>s+(c.bono_a||0),0)>=0?'#059669':'#DC2626'}">${fmtCurrency(allStats.reduce((s,c)=>s+(c.bono_a||0),0))}</div>
+          <div style="font-size:20px;font-weight:800;color:${allStats.reduce((s,c)=>s+Number(c.bono_a||0),0)>=0?'#059669':'#DC2626'}">${fmtCurrency(allStats.reduce((s,c)=>s+Number(c.bono_a||0),0))}</div>
         </div>
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
           <div style="font-size:11px;color:var(--fg2);margin-bottom:4px">Jefatura (si se activa)</div>
@@ -1107,8 +1107,8 @@ function renderResumen() {
       ${(() => {
         const totalExtraCond = conductores.reduce((s,c)=>{ const pct=stats[c.clave]?.pct_tiempo??0; return s+(pct>=metaPct?BONO_EXTRA_COND:0); },0);
         const totalExtraAyud = conductores.reduce((s,c)=>{ const pct=stats[c.clave]?.pct_tiempo??0; return s+(pct>=metaPct?BONO_EXTRA_AYUD:0); },0);
-        const totalCondBono  = allStats.reduce((s,c)=>s+(c.bono_c||0),0);
-        const totalAyudBono  = allStats.reduce((s,c)=>s+(c.bono_a||0),0);
+        const totalCondBono  = allStats.reduce((s,c)=>s+Number(c.bono_c||0),0);
+        const totalAyudBono  = allStats.reduce((s,c)=>s+Number(c.bono_a||0),0);
         const totalJefatura  = bj.activado ? BONO_JEFE + BONO_AUX1 + BONO_AUX2 : 0;
         const grandTotal     = totalCondBono + totalAyudBono + totalExtraCond + totalExtraAyud + totalJefatura;
         const th = (t,r='right') => `<th style="text-align:${r};padding:5px 8px;color:var(--fg2);font-weight:600">${t}</th>`;
@@ -1119,7 +1119,7 @@ function renderResumen() {
           const condPct = stats[c.clave]?.pct_tiempo ?? 0;
           const exC = condPct >= metaPct ? BONO_EXTRA_COND : 0;
           const exA = condPct >= metaPct ? BONO_EXTRA_AYUD : 0;
-          const tot = (s.bono_c||0) + (s.bono_a||0) + exC + exA;
+          const tot = Number(s.bono_c||0) + Number(s.bono_a||0) + exC + exA;
           const clr = tot >= 0 ? '#059669' : '#DC2626';
           return `<tr style="border-bottom:1px solid var(--border)">
             <td style="padding:6px 8px;font-weight:600;color:${COND_COLORS[c.clave]||'var(--fg)'}">${c.nombre || c.clave}</td>
