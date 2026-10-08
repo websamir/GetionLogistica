@@ -149,10 +149,18 @@ def get_stats():
         END
     """
 
-    mes_filter = "AND fec_entr LIKE ?" if mes else ""
-    params = [mes + '%'] if mes else []
+    if mes:
+        if db.USING_PG:
+            mes_filter = "AND to_char(fec_entr,'YYYY-MM') = %s"
+        else:
+            mes_filter = "AND fec_entr LIKE ?"
+            mes = mes + '%'
+        params = [mes]
+    else:
+        mes_filter = ""
+        params = []
 
-    rows = conn.execute(f"""
+    sql = f"""
         SELECT
             cond_key,
             COUNT(*) AS total,
@@ -168,9 +176,9 @@ def get_stats():
         FROM facturas
         WHERE 1=1 {mes_filter}
         GROUP BY cond_key
-    """, params).fetchall()
-
-    conn.close()
+    """
+    rows = db.fetchall(conn, sql, params)
+    db.close(conn)
 
     stats = {}
     for r in rows:
