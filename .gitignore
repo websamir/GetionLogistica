@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Base de datos local (no subir datos reales)
+backend/data/logistica.db
+backend/uploads/
+
+# Archivos temporales
+*.tmp.xlsx
+*.tmp
+
+# Logs
+*.log
+C:/Automatizaciones/
+
+# Credenciales y entorno
+.env
+*.env
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ZIP generados
+*.zip
+
+# Archivos temporales de Office (abiertos)
+~$*
+
+# Playwright
+playwright-report/
+test-results/

@@ -1,0 +1,2836 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gestión Logística INVESAKK</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ── TOKENS ─────────────────────────────────────────── */
+:root {
+  /* Layout: app shell with sidebar nav, card grid content */
+  --bg:       #F7F8FA;
+  --surface:  #FFFFFF;
+  --border:   #E4E7EC;
+  --nav-bg:   #0F1F3D;
+  --nav-text: #A8B8D0;
+  --nav-act:  #FFFFFF;
+  --nav-pill: #1E3A6E;
+
+  --fg:       #111827;
+  --fg2:      #4B5563;
+  --fg3:      #9CA3AF;
+
+  --accent:   #1D4ED8;
+  --accent-s: #EFF6FF;
+  --ok:       #059669;
+  --ok-s:     #ECFDF5;
+  --warn:     #D97706;
+  --warn-s:   #FFFBEB;
+  --danger:   #DC2626;
+  --danger-s: #FEF2F2;
+  --purple:   #7C3AED;
+  --purple-s: #F5F3FF;
+
+  --r:        8px;
+  --r-lg:     12px;
+  --shadow:   0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 16px rgba(0,0,0,.10);
+
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:       #0D1117;
+    --surface:  #161B22;
+    --border:   #2D3748;
+    --nav-bg:   #0A1628;
+    --nav-text: #7A8FA6;
+    --nav-act:  #FFFFFF;
+    --nav-pill: #1E3A6E;
+    --fg:       #E5E7EB;
+    --fg2:      #9CA3AF;
+    --fg3:      #6B7280;
+    --accent:   #3B82F6;
+    --accent-s: #1E2F4A;
+    --ok:       #10B981;
+    --ok-s:     #0D2B1F;
+    --warn:     #F59E0B;
+    --warn-s:   #2A1F0A;
+    --danger:   #EF4444;
+    --danger-s: #2A0D0D;
+    --purple:   #8B5CF6;
+    --purple-s: #1F1535;
+    --shadow:   0 1px 3px rgba(0,0,0,.3);
+    --shadow-md:0 4px 16px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+    --bg:#0D1117;--surface:#161B22;--border:#2D3748;--nav-bg:#0A1628;--nav-text:#7A8FA6;--nav-act:#FFFFFF;--nav-pill:#1E3A6E;--fg:#E5E7EB;--fg2:#9CA3AF;--fg3:#6B7280;--accent:#3B82F6;--accent-s:#1E2F4A;--ok:#10B981;--ok-s:#0D2B1F;--warn:#F59E0B;--warn-s:#2A1F0A;--danger:#EF4444;--danger-s:#2A0D0D;--purple:#8B5CF6;--purple-s:#1F1535;--shadow:0 1px 3px rgba(0,0,0,.3);--shadow-md:0 4px 16px rgba(0,0,0,.4);color-scheme:dark;
+}
+
+/* ── RESET ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font-body); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; }
+button { cursor: pointer; font-family: inherit; border: none; background: none; }
+input, select { font-family: inherit; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+
+/* ── LOGIN ──────────────────────────────────────────── */
+#login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nav-bg);
+  padding: 24px 16px;
+}
+.login-card {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 420px;
+  padding: 40px 32px;
+}
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.login-logo .logo-badge {
+  width: 44px; height: 44px;
+  background: var(--accent);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1px;
+}
+.login-logo .brand { font-size: 18px; font-weight: 700; color: var(--fg); }
+.login-logo .brand span { font-size: 12px; font-weight: 500; color: var(--fg2); display: block; }
+.login-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.login-card p { color: var(--fg2); margin-bottom: 28px; font-size: 13px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--fg2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+.field select, .field input {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 14px;
+}
+.field select:focus, .field input:focus { outline: none; border-color: var(--accent); }
+.btn-primary {
+  width: 100%; padding: 12px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--r);
+  font-size: 15px; font-weight: 600;
+  margin-top: 8px;
+  transition: opacity .15s;
+}
+.btn-primary:hover { opacity: .88; }
+
+/* ── APP SHELL ──────────────────────────────────────── */
+#app { display: none; height: 100vh; flex-direction: column; }
+#app.visible { display: flex; }
+
+.app-nav {
+  background: var(--nav-bg);
+  color: var(--nav-text);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 56px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  overflow-x: auto;
+}
+.nav-brand {
+  font-size: 15px; font-weight: 700; color: #fff;
+  margin-right: 12px; white-space: nowrap;
+}
+.nav-brand span { opacity: .5; font-weight: 400; }
+.nav-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px; font-weight: 500;
+  color: var(--nav-text);
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.nav-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+.nav-btn.active { background: var(--nav-pill); color: var(--nav-act); }
+.nav-spacer { flex: 1; }
+.nav-user {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--nav-text); white-space: nowrap;
+}
+.nav-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+}
+.nav-logout {
+  padding: 5px 10px; border-radius: 6px; font-size: 12px;
+  color: var(--nav-text); border: 1px solid rgba(255,255,255,.15);
+  margin-left: 4px;
+}
+.nav-logout:hover { color: #fff; border-color: rgba(255,255,255,.4); }
+
+.app-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 16px;
+}
+
+/* ── PAGE SECTIONS ──────────────────────────────────── */
+.page { display: none; max-width: 1100px; margin: 0 auto; }
+.page.active { display: block; }
+
+.page-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: var(--fg2); margin-bottom: 24px; }
+
+/* ── KPI TILES ──────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+.kpi-label { font-size: 11px; font-weight: 600; color: var(--fg3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.kpi-value { font-size: 28px; font-weight: 800; color: var(--fg); line-height: 1; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.kpi-value.ok  { color: var(--ok); }
+.kpi-value.warn { color: var(--warn); }
+.kpi-value.danger { color: var(--danger); }
+.kpi-meta { font-size: 12px; color: var(--fg3); }
+
+/* ── CARDS ──────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.card-head {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.card-head h3 { font-size: 15px; font-weight: 600; }
+.card-head p { font-size: 12px; color: var(--fg2); margin-top: 2px; }
+.card-body { padding: 20px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 680px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ── TABLE ──────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { padding: 9px 14px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--fg2); border-bottom: 1px solid var(--border); background: var(--bg); white-space: nowrap; }
+td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg); }
+.mono { font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* ── CHIPS / BADGES ─────────────────────────────────── */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 100px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.chip.ok      { background: var(--ok-s);     color: var(--ok); }
+.chip.warn    { background: var(--warn-s);   color: var(--warn); }
+.chip.danger  { background: var(--danger-s); color: var(--danger); }
+.chip.info    { background: var(--accent-s); color: var(--accent); }
+.chip.purple  { background: var(--purple-s); color: var(--purple); }
+.chip.neutral { background: var(--border);   color: var(--fg2); }
+.chip.purple  { background: #ede9fe;         color: #7c3aed; }
+
+/* ── PROGRESS BAR ───────────────────────────────────── */
+.prog-wrap { margin-top: 8px; }
+.prog-bar {
+  height: 8px; border-radius: 100px;
+  background: var(--border); overflow: hidden;
+}
+.prog-fill { height: 100%; border-radius: 100px; transition: width .6s; }
+.prog-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--fg3); margin-top: 4px; }
+
+/* ── MINI CHART (SVG) ───────────────────────────────── */
+.chart-svg { width: 100%; height: 180px; }
+.chart-svg text { fill: var(--fg2); }
+.bar-ok   { fill: var(--ok); }
+.bar-tot  { fill: var(--accent); opacity: .25; }
+.bar-spd  { fill: var(--danger); }
+.bar-acc  { fill: var(--warn); }
+.bar-brk  { fill: var(--purple); }
+.axis-line { stroke: var(--border); stroke-width: 1; }
+
+/* ── ALERT BOX ──────────────────────────────────────── */
+.alert {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 14px 16px; border-radius: var(--r); margin-bottom: 16px;
+  border-left: 3px solid;
+}
+.alert.warn { background: var(--warn-s); border-color: var(--warn); color: var(--warn); }
+.alert.danger { background: var(--danger-s); border-color: var(--danger); color: var(--danger); }
+.alert.ok { background: var(--ok-s); border-color: var(--ok); color: var(--ok); }
+.alert .al-body { color: var(--fg); font-size: 13px; }
+.alert .al-body strong { color: inherit; }
+
+/* ── INCENTIVE TABLE ─────────────────────────────────── */
+.inc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 580px) { .inc-grid { grid-template-columns: 1fr; } }
+.inc-box { border-radius: var(--r); padding: 14px; }
+.inc-box.prize { background: var(--ok-s); }
+.inc-box.penalty { background: var(--danger-s); }
+.inc-box h4 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.inc-box.prize h4 { color: var(--ok); }
+.inc-box.penalty h4 { color: var(--danger); }
+.inc-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,.06); }
+.inc-row:last-child { border-bottom: none; }
+.inc-amt { font-family: var(--font-mono); font-weight: 600; font-size: 12px; }
+.inc-box.prize .inc-amt { color: var(--ok); }
+.inc-box.penalty .inc-amt { color: var(--danger); }
+
+/* ── ADMIN PANEL ─────────────────────────────────────── */
+.upload-tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:20px; }
+.upload-tab {
+  padding:9px 18px; font-size:13px; font-weight:600; color:var(--fg3);
+  border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .15s;
+}
+.upload-tab:hover { color:var(--fg); }
+.upload-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.upload-section { display:none; }
+.upload-section.active { display:block; }
+
+.drop-zone {
+  border:2px dashed var(--border); border-radius:var(--r-lg);
+  padding:36px 20px; text-align:center; cursor:pointer;
+  transition:border-color .2s, background .2s; background:var(--bg);
+  position:relative;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color:var(--accent); background:var(--accent-s);
+}
+.drop-zone input[type=file] {
+  position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
+}
+.drop-icon { font-size:36px; margin-bottom:10px; }
+.drop-title { font-size:15px; font-weight:600; margin-bottom:4px; }
+.drop-sub { font-size:12px; color:var(--fg3); }
+
+.schema-box {
+  background:var(--bg); border-radius:var(--r); padding:14px 16px; margin:16px 0;
+  border-left:3px solid var(--accent);
+}
+.schema-box h4 { font-size:12px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.4px; margin-bottom:8px; }
+.col-chip {
+  display:inline-block; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:600;
+  background:var(--accent-s); color:var(--accent); margin:2px; font-family:var(--font-mono);
+}
+.col-chip.opt { background:var(--border); color:var(--fg3); }
+
+.preview-area { margin-top:16px; }
+.preview-area h4 { font-size:13px; font-weight:600; margin-bottom:10px; }
+.upload-status {
+  display:flex; align-items:center; gap:10px; padding:12px 14px;
+  border-radius:var(--r); margin-top:12px; font-size:13px; font-weight:500;
+}
+.upload-status.ok     { background:var(--ok-s);     color:var(--ok);     }
+.upload-status.error  { background:var(--danger-s); color:var(--danger); }
+.upload-status.info   { background:var(--accent-s); color:var(--accent); }
+
+.btn-apply {
+  padding:10px 22px; background:var(--ok); color:#fff; border-radius:var(--r);
+  font-size:14px; font-weight:600; margin-top:14px; display:inline-flex; align-items:center; gap:6px;
+  transition:opacity .15s;
+}
+.btn-apply:hover { opacity:.85; }
+.btn-apply:disabled { opacity:.4; cursor:not-allowed; }
+.btn-clear {
+  padding:10px 18px; background:var(--bg); color:var(--fg2); border-radius:var(--r);
+  font-size:14px; font-weight:500; margin-top:14px; margin-left:8px; border:1.5px solid var(--border);
+  transition:border-color .15s;
+}
+.btn-clear:hover { border-color:var(--fg2); }
+
+.log-list { list-style:none; font-size:12px; color:var(--fg2); margin-top:10px; max-height:120px; overflow-y:auto; }
+.log-list li { padding:3px 0; border-bottom:1px solid var(--border); }
+.log-list li:last-child { border:none; }
+.log-list .ok   { color:var(--ok);     }
+.log-list .warn { color:var(--warn);   }
+.log-list .err  { color:var(--danger); }
+
+/* ── AUTH / PROFILE ─────────────────────────────────── */
+.login-error {
+  background: var(--danger-s); color: var(--danger);
+  border-radius: var(--r); padding: 10px 14px;
+  font-size: 13px; margin-bottom: 14px; display: none;
+}
+.input-group { position: relative; }
+.input-group input { padding-right: 40px; }
+.input-group .eye-btn {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; color: var(--fg3); font-size: 16px; padding: 2px;
+}
+.cred-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:12px; }
+.cred-table th { padding:6px 10px; background:var(--nav-bg); color:var(--nav-text); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+.cred-table td { padding:7px 10px; border-bottom:1px solid var(--border); font-family:var(--font-mono); }
+.cred-table tr:last-child td { border:none; }
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999; padding: 20px;
+}
+.modal-overlay[hidden] { display: none !important; }
+.modal-box {
+  background: var(--surface); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md); width: 100%; max-width: 440px;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
+}
+.modal-head h3 { font-size: 16px; font-weight: 700; }
+.modal-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--fg3); background: var(--bg);
+  border: 1px solid var(--border);
+}
+.modal-close:hover { color: var(--fg); }
+.modal-body { padding: 20px 22px; }
+.profile-avatar-lg {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--accent); display: flex; align-items: center;
+  justify-content: center; font-size: 26px; font-weight: 800; color: #fff;
+  margin: 0 auto 12px; flex-shrink: 0;
+}
+.profile-field { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.profile-field:last-child { border:none; }
+.profile-field .lbl { color:var(--fg2); font-size:12px; }
+.profile-field .val { font-weight:600; text-align:right; }
+
+/* ── ROLE BADGE ──────────────────────────────────────── */
+.role-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 100px;
+  font-size: 12px; font-weight: 600;
+  background: var(--nav-pill); color: #90B8E8;
+}
+
+/* ── SECTION DIVIDER ────────────────────────────────── */
+.sec-div { display: flex; align-items: center; gap: 12px; margin: 28px 0 18px; }
+.sec-div span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--fg3); white-space: nowrap; }
+.sec-div::before, .sec-div::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── CONDUCTOR SELECTOR ──────────────────────────────── */
+.cond-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.cond-pill {
+  padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 500;
+  border: 1.5px solid var(--border); color: var(--fg2); background: var(--surface);
+  transition: all .15s;
+}
+.cond-pill:hover { border-color: var(--accent); color: var(--accent); }
+.cond-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── GAUGE ──────────────────────────────────────────── */
+.gauge-wrap { display: flex; flex-direction: column; align-items: center; }
+.gauge-label { font-size: 12px; color: var(--fg2); margin-top: 6px; }
+.gauge-pct { font-size: 32px; font-weight: 800; margin-top: -4px; }
+
+/* ── PENDING TABLE ──────────────────────────────────── */
+.mini-bar { height: 6px; border-radius: 3px; min-width: 2px; display: inline-block; vertical-align: middle; }
+
+/* ── FACTURAS ───────────────────────────────────────── */
+.fact-filter { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; align-items:center; }
+.fact-filter select, .fact-filter input {
+  padding:7px 11px; border:1.5px solid var(--border); border-radius:var(--r);
+  background:var(--surface); color:var(--fg); font-size:13px; font-family:inherit;
+}
+.fact-filter input { min-width:160px; }
+.fact-filter select:focus, .fact-filter input:focus { outline:none; border-color:var(--accent); }
+.fact-summary {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:16px;
+}
+.fact-sum-box { padding:12px 14px; border-radius:var(--r); background:var(--bg); }
+.fact-sum-box .lbl { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; color:var(--fg3); }
+.fact-sum-box .val { font-size:20px; font-weight:800; line-height:1.2; margin-top:2px; font-variant-numeric:tabular-nums; }
+.dias-badge {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:54px; height:22px; border-radius:100px; font-size:11px; font-weight:700;
+  font-family:var(--font-mono); letter-spacing:.2px;
+}
+.dias-0  { background:var(--ok-s);     color:var(--ok);     }
+.dias-1  { background:var(--ok-s);     color:var(--ok);     }
+.dias-2  { background:var(--ok-s);     color:var(--ok);     }
+.dias-3  { background:var(--warn-s);   color:var(--warn);   }
+.dias-4  { background:var(--danger-s); color:var(--danger); }
+.bono-cell { font-family:var(--font-mono); font-size:12px; font-weight:600; }
+.bono-pos { color:var(--ok); }
+.bono-neg { color:var(--danger); }
+.bono-neu { color:var(--fg3); }
+</style>
+</head>
+<body>
+
+<!-- ────────────────────────────────────────────────────
+     LOGIN SCREEN
+──────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-badge">IN</div>
+      <div class="brand">INVESAKK SAS <span>NIT 802014471-6 · Barranquilla</span></div>
+    </div>
+    <h2>Gestión Logística</h2>
+    <p>Ingresa con tu usuario y contraseña asignados</p>
+
+    <div id="login-error" class="login-error">Usuario o contraseña incorrectos.</div>
+
+    <div class="field">
+      <label>Usuario</label>
+      <input type="text" id="inp-user" placeholder="ej. roa.julio" autocomplete="username"
+             onkeydown="if(event.key==='Enter')document.getElementById('inp-pass').focus()">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <div class="input-group">
+        <input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="eye-btn" onclick="togglePass()" tabindex="-1" title="Mostrar/ocultar">👁</button>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="doLogin()">Ingresar →</button>
+
+    <!-- Credenciales de demo -->
+    <details style="margin-top:22px">
+      <summary style="font-size:12px;color:var(--fg3);cursor:pointer;user-select:none">Ver credenciales de prueba</summary>
+      <table class="cred-table">
+        <thead><tr><th>Usuario</th><th>Contraseña</th><th>Rol</th></tr></thead>
+        <tbody>
+          <tr><td>admin</td><td>admin2026</td><td>Administrador</td></tr>
+          <tr><td>jefe.logistica</td><td>jefe2026</td><td>Jefe Logística</td></tr>
+          <tr><td>landero</td><td>aux2026</td><td>Auxiliar Jefatura</td></tr>
+          <tr><td>roa.julio</td><td>roa2026</td><td>Conductor ROA</td></tr>
+          <tr><td>martinez.luis</td><td>mart2026</td><td>Conductor MARTINEZ</td></tr>
+          <tr><td>marin.jose</td><td>marin2026</td><td>Conductor MARÍN</td></tr>
+          <tr><td>mendoza.luis</td><td>mend2026</td><td>Conductor MENDOZA</td></tr>
+          <tr><td>nino.ademir</td><td>nino2026</td><td>Conductor NIÑO</td></tr>
+          <tr><td>ayud.roa</td><td>ayud2026</td><td>Carlos Pérez · Ayud. ROA</td></tr>
+          <tr><td>ayud.martinez</td><td>ayud2026</td><td>Jhon Torres · Ayud. MARTINEZ</td></tr>
+          <tr><td>ayud.marin</td><td>ayud2026</td><td>Edwin Ospino · Ayud. MARÍN</td></tr>
+          <tr><td>ayud.mendoza</td><td>ayud2026</td><td>Ricardo Vargas · Ayud. MENDOZA</td></tr>
+          <tr><td>ayud.nino</td><td>ayud2026</td><td>Andrés Blanco · Ayud. NIÑO</td></tr>
+        </tbody>
+      </table>
+    </details>
+  </div>
+</div>
+
+<!-- MODAL PERFIL -->
+<div id="modal-perfil" class="modal-overlay" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Mi Perfil</h3>
+      <button class="modal-close" onclick="cerrarPerfil()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="profile-avatar-lg" id="prof-avatar">JL</div>
+      <div id="prof-fields"></div>
+      <button class="btn-primary" style="margin-top:20px" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────────
+     APP SHELL
+──────────────────────────────────────────────────────── -->
+<div id="app">
+  <nav class="app-nav">
+    <div class="nav-brand">INVESAKK <span>/ Logística</span></div>
+    <div id="nav-items" style="display:flex;gap:4px;align-items:center;flex-wrap:wrap"></div>
+    <div class="nav-spacer"></div>
+    <div class="nav-user">
+      <button onclick="abrirPerfil()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:8px;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='none'">
+        <div class="nav-avatar" id="nav-avatar">JL</div>
+        <div style="text-align:left">
+          <div id="nav-name" style="font-size:13px;color:#fff;font-weight:500;line-height:1.2">Jefe</div>
+          <div id="nav-role-label" style="font-size:10px;color:var(--nav-text);line-height:1.2">Logística</div>
+        </div>
+      </button>
+    </div>
+  </nav>
+
+  <main class="app-body">
+    <!-- ADMIN -->
+    <div class="page" id="page-admin">
+      <div class="page-title">⚙️ Administración — Carga de Datos</div>
+      <div class="page-sub">Sube archivos Excel (.xlsx) para actualizar la información de la plataforma</div>
+
+      <div class="alert info" style="margin-bottom:20px">
+        <span style="font-size:18px">📋</span>
+        <div class="al-body">Descarga la plantilla de cada sección, completa los datos en Excel y sube el archivo. Los datos se aplican de inmediato en memoria. <strong>Formato requerido: .xlsx</strong></div>
+      </div>
+
+      <!-- TABS -->
+      <div class="upload-tabs">
+        <button class="upload-tab active" onclick="adminTab('facturas',this)">📄 Facturas / Pedidos</button>
+        <button class="upload-tab" onclick="adminTab('conductores',this)">👥 Conductores</button>
+        <button class="upload-tab" onclick="adminTab('gps',this)">🗺️ GPS</button>
+        <button class="upload-tab" onclick="adminTab('bodegas',this)">📦 Pendientes Bodega</button>
+      </div>
+
+      <!-- TAB: FACTURAS -->
+      <div class="upload-section active" id="sec-facturas">
+        <div class="schema-box">
+          <h4>📤 Formato SQL — Exportación directa de la base de datos</h4>
+          <div style="margin-bottom:6px">
+            <span class="col-chip" title="Número de documento">numero</span>
+            <span class="col-chip" title="Nombre del conductor">nombre</span>
+            <span class="col-chip" title="Tipo: NT20, NT10, FEPA, G1AG…">tipo</span>
+            <span class="col-chip opt" title="Descripción del tipo">descripcion</span>
+            <span class="col-chip" title="Nombre del cliente">nombres</span>
+            <span class="col-chip opt">ciudad</span>
+            <span class="col-chip opt">dpto</span>
+            <span class="col-chip opt">placa</span>
+            <span class="col-chip opt" title="Valor total">total_trans</span>
+            <span class="col-chip opt" title="Peso total">peso_total</span>
+            <span class="col-chip">fec_Factura</span>
+            <span class="col-chip opt">fec_promesa_entrega</span>
+            <span class="col-chip opt">fec_entrega_logistica</span>
+            <span class="col-chip opt" title="Días calculados por SQL">diferencia_fecha_dias</span>
+          </div>
+          <div style="margin-top:4px;padding:6px 10px;background:var(--bg);border-radius:6px;font-size:10.5px;color:var(--fg3);border:1px solid var(--border)">
+            <strong style="color:var(--fg2)">Formato alternativo (clásico):</strong>
+            <span class="col-chip" style="font-size:10px">Factura</span>
+            <span class="col-chip" style="font-size:10px">Conductor</span>
+            <span class="col-chip" style="font-size:10px">Cliente</span>
+            <span class="col-chip" style="font-size:10px">Ciudad</span>
+            <span class="col-chip" style="font-size:10px">FechaFactura</span>
+            <span class="col-chip" style="font-size:10px">FechaEntrega</span>
+            &nbsp;·&nbsp; EsNT: SI/NO (opcional)
+          </div>
+          <div style="margin-top:6px;font-size:11px;color:var(--fg3)">
+            Conductor identificado por: nombre exacto o parcial (ej. "MARIN (TR) JOSE") o por placa del vehículo &nbsp;·&nbsp;
+            Tipos NT* → nota de traslado (sin bono) &nbsp;·&nbsp; Fechas: YYYY-MM-DD o serial Excel &nbsp;·&nbsp;
+            fec_entrega_logistica vacía = pendiente
+          </div>
+        </div>
+        <div class="drop-zone" id="dz-facturas"
+             ondragover="dzOver(event,'dz-facturas')" ondragleave="dzLeave('dz-facturas')"
+             ondrop="dzDrop(event,'facturas')">
+          <input type="file" accept=".xlsx,.xls" onchange="xlsxLoad(event,'facturas')">
+          <div class="drop-icon">📂</div>
+          <div class="drop-title">Arrastra el archivo aquí o haz clic para seleccionar</div>
+          <div class="drop-sub">Formatos aceptados: .xlsx · .xls</div>
+        </div>
+        <div id="prev-facturas" class="preview-area"></div>
+      </div>
+
+      <!-- TAB: CONDUCTORES -->
+      <div class="upload-section" id="sec-conductores">
+        <div class="schema-box">
+          <h4>Columnas requeridas en la hoja "Conductores"</h4>
+          <div>
+            <span class="col-chip">Clave</span>
+            <span class="col-chip">Nombre</span>
+            <span class="col-chip">Placa</span>
+            <span class="col-chip">Pedidos</span>
+            <span class="col-chip">ATiempo</span>
+            <span class="col-chip">H24</span>
+            <span class="col-chip">D2</span>
+            <span class="col-chip">BonoC</span>
+            <span class="col-chip">BonoA</span>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--fg3)">
+            Clave: ROA | MARTINEZ | MARIN | MENDOZA | NIÑO &nbsp;·&nbsp; BonoC/BonoA: valor neto en pesos (puede ser negativo)
+          </div>
+        </div>
+        <div class="drop-zone" id="dz-conductores"
+             ondragover="dzOver(event,'dz-conductores')" ondragleave="dzLeave('dz-conductores')"
+             ondrop="dzDrop(event,'conductores')">
+          <input type="file" accept=".xlsx,.xls" onchange="xlsxLoad(event,'conductores')">
+          <div class="drop-icon">📂</div>
+          <div class="drop-title">Arrastra el archivo aquí o haz clic para seleccionar</div>
+          <div class="drop-sub">Formatos aceptados: .xlsx · .xls</div>
+        </div>
+        <div id="prev-conductores" class="preview-area"></div>
+      </div>
+
+      <!-- TAB: GPS -->
+      <div class="upload-section" id="sec-gps">
+        <div class="schema-box">
+          <h4>Columnas requeridas en la hoja "GPS"</h4>
+          <div>
+            <span class="col-chip">Placa</span>
+            <span class="col-chip">Conductor</span>
+            <span class="col-chip">ExcesoVel</span>
+            <span class="col-chip">AcelBrusca</span>
+            <span class="col-chip">FrenadoBrusco</span>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--fg3)">
+            Conductor: nombre completo o "—" si no aplica &nbsp;·&nbsp; Valores: enteros
+          </div>
+        </div>
+        <div class="drop-zone" id="dz-gps"
+             ondragover="dzOver(event,'dz-gps')" ondragleave="dzLeave('dz-gps')"
+             ondrop="dzDrop(event,'gps')">
+          <input type="file" accept=".xlsx,.xls" onchange="xlsxLoad(event,'gps')">
+          <div class="drop-icon">📂</div>
+          <div class="drop-title">Arrastra el archivo aquí o haz clic para seleccionar</div>
+          <div class="drop-sub">Formatos aceptados: .xlsx · .xls</div>
+        </div>
+        <div id="prev-gps" class="preview-area"></div>
+      </div>
+
+      <!-- TAB: BODEGAS -->
+      <div class="upload-section" id="sec-bodegas">
+        <div class="schema-box">
+          <h4>Columnas requeridas en la hoja "Bodegas"</h4>
+          <div>
+            <span class="col-chip">Sede</span>
+            <span class="col-chip">Pedidos</span>
+            <span class="col-chip">NT</span>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--fg3)">
+            Sede: nombre de la bodega &nbsp;·&nbsp; Pedidos y NT: cantidades enteras
+          </div>
+        </div>
+        <div class="drop-zone" id="dz-bodegas"
+             ondragover="dzOver(event,'dz-bodegas')" ondragleave="dzLeave('dz-bodegas')"
+             ondrop="dzDrop(event,'bodegas')">
+          <input type="file" accept=".xlsx,.xls" onchange="xlsxLoad(event,'bodegas')">
+          <div class="drop-icon">📂</div>
+          <div class="drop-title">Arrastra el archivo aquí o haz clic para seleccionar</div>
+          <div class="drop-sub">Formatos aceptados: .xlsx · .xls</div>
+        </div>
+        <div id="prev-bodegas" class="preview-area"></div>
+      </div>
+
+      <!-- LOG -->
+      <div class="card" style="margin-top:24px">
+        <div class="card-head"><div><h3>Historial de cargas</h3><p>Últimas actualizaciones aplicadas en esta sesión</p></div>
+          <button class="btn-clear" style="margin:0;padding:6px 12px;font-size:12px" onclick="document.getElementById('upload-log').innerHTML=''">Limpiar</button>
+        </div>
+        <div class="card-body" style="padding:12px 20px">
+          <ul class="log-list" id="upload-log"><li style="color:var(--fg3)">Sin actividad aún.</li></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- JEFE: Resumen Ejecutivo -->
+    <div class="page" id="page-resumen">
+      <div class="page-title">Resumen Ejecutivo — Septiembre 2026</div>
+      <div class="page-sub">Visión general de entregas, flota e incentivos · 653 pedidos gestionados</div>
+
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-label">Pedidos entregados</div>
+          <div class="kpi-value">653</div>
+          <div class="kpi-meta">5 conductores activos</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Cumplimiento a tiempo</div>
+          <div class="kpi-value warn">27%</div>
+          <div class="kpi-meta">Meta: 85% · ≤5 días hábiles</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Pedidos pendientes</div>
+          <div class="kpi-value warn">78</div>
+          <div class="kpi-meta">+ 152 NT (notas de traslado)</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Km recorridos</div>
+          <div class="kpi-value">12.902</div>
+          <div class="kpi-meta">Toda la flota</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Bonos del mes</div>
+          <div class="kpi-value ok">$582.600</div>
+          <div class="kpi-meta">Conductores + ayudantes</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Bono jefatura</div>
+          <div class="kpi-value danger">—</div>
+          <div class="kpi-meta">No activado (27% &lt; 85%)</div>
+        </div>
+      </div>
+
+      <div class="alert warn">
+        <span style="font-size:18px">⚠️</span>
+        <div class="al-body">
+          <strong>Bono de jefatura NO activado.</strong> El cumplimiento actual es 27% — muy por debajo de la meta del 85%. Si cada conductor alcanzara el 85%, el pago total proyectado sería <strong>$7.927.200</strong>.
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><div><h3>Desempeño por conductor</h3><p>Pedidos y tasa de cumplimiento</p></div></div>
+          <div class="card-body" style="padding:16px 20px">
+            <svg class="chart-svg" viewBox="0 0 360 170" preserveAspectRatio="none">
+              <!-- axis -->
+              <line x1="60" y1="10" x2="60" y2="145" class="axis-line"/>
+              <line x1="60" y1="145" x2="355" y2="145" class="axis-line"/>
+              <!-- ROA: 170 tot, 77 ok -->
+              <rect x="68" y="72" width="40" height="73" class="bar-tot" rx="2"/>
+              <rect x="68" y="107" width="40" height="38" class="bar-ok" rx="2"/>
+              <!-- MARTINEZ: 147, 59 -->
+              <rect x="120" y="82" width="40" height="63" class="bar-tot" rx="2"/>
+              <rect x="120" y="116" width="40" height="29" class="bar-ok" rx="2"/>
+              <!-- MARIN: 70, 18 -->
+              <rect x="172" y="115" width="40" height="30" class="bar-tot" rx="2"/>
+              <rect x="172" y="136" width="40" height="9" class="bar-ok" rx="2"/>
+              <!-- MENDOZA: 200, 14 -->
+              <rect x="224" y="58" width="40" height="87" class="bar-tot" rx="2"/>
+              <rect x="224" y="138" width="40" height="7" class="bar-ok" rx="2"/>
+              <!-- NIÑO: 66, 11 -->
+              <rect x="276" y="117" width="40" height="28" class="bar-tot" rx="2"/>
+              <rect x="276" y="139" width="40" height="6" class="bar-ok" rx="2"/>
+              <!-- labels x -->
+              <text x="88"  y="160" font-size="9" text-anchor="middle">ROA</text>
+              <text x="140" y="160" font-size="9" text-anchor="middle">MART.</text>
+              <text x="192" y="160" font-size="9" text-anchor="middle">MARÍN</text>
+              <text x="244" y="160" font-size="9" text-anchor="middle">MEND.</text>
+              <text x="296" y="160" font-size="9" text-anchor="middle">NIÑO</text>
+              <!-- values -->
+              <text x="88"  y="68"  font-size="9" text-anchor="middle" fill="#4B5563">170</text>
+              <text x="140" y="78"  font-size="9" text-anchor="middle" fill="#4B5563">147</text>
+              <text x="192" y="111" font-size="9" text-anchor="middle" fill="#4B5563">70</text>
+              <text x="244" y="54"  font-size="9" text-anchor="middle" fill="#4B5563">200</text>
+              <text x="296" y="113" font-size="9" text-anchor="middle" fill="#4B5563">66</text>
+              <!-- legend -->
+              <rect x="62" y="14" width="10" height="10" class="bar-tot" rx="2"/>
+              <text x="74" y="23" font-size="9">Total</text>
+              <rect x="100" y="14" width="10" height="10" class="bar-ok" rx="2"/>
+              <text x="112" y="23" font-size="9">A tiempo</text>
+            </svg>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Cumplimiento</h3><p>% entregas a tiempo por conductor</p></div></div>
+          <div class="card-body">
+            <div id="prog-conductores"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Top destinos — Septiembre</h3><p>Ciudades con más entregas</p></div></div>
+        <div class="card-body">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Ciudad</th><th>Entregas</th><th>Participación</th></tr></thead>
+              <tbody id="tb-ciudades"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JEFE / AUX: Equipo conductores -->
+    <div class="page" id="page-equipo">
+      <div class="page-title">Equipo de Conductores</div>
+      <div class="page-sub">Resultados individuales · bonos y cumplimiento · Septiembre 2026</div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Liquidación de bonos</h3><p>Premios y castigos aplicados</p></div></div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Conductor</th>
+                  <th>Vehículo</th>
+                  <th>Pedidos</th>
+                  <th>A tiempo</th>
+                  <th>Cumpl.</th>
+                  <th>Bono cond.</th>
+                  <th>Bono ayud.</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="tb-equipo"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><div><h3>Escenario meta (85%)</h3><p>Proyección si cada uno cumple la meta</p></div></div>
+          <div class="card-body" style="padding:0">
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>Conductor</th><th>A tiempo*</th><th>Bono cond.</th><th>Bono ayud.</th></tr></thead>
+                <tbody id="tb-meta"></tbody>
+              </table>
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--fg2)">
+              * Incluye extra +$350.000 por alcanzar 85% · Bono jefatura: $1.200.000
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Bono de jefatura</h3><p>Se activa al 85% de cumplimiento</p></div></div>
+          <div class="card-body">
+            <div class="gauge-wrap" style="margin-bottom:16px">
+              <svg viewBox="0 0 120 70" width="160" height="90">
+                <path d="M10,65 A50,50 0 0,1 110,65" fill="none" stroke="var(--border)" stroke-width="10" stroke-linecap="round"/>
+                <path d="M10,65 A50,50 0 0,1 110,65" fill="none" stroke="var(--danger)" stroke-width="10" stroke-linecap="round"
+                      stroke-dasharray="157" stroke-dashoffset="115" id="gauge-arc"/>
+                <text x="60" y="60" text-anchor="middle" font-size="16" font-weight="800" fill="var(--fg)">27%</text>
+              </svg>
+              <div class="gauge-label">Cumplimiento actual · Meta: 85%</div>
+            </div>
+            <div style="display:grid;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg);border-radius:var(--r)">
+                <div>
+                  <div style="font-size:13px;font-weight:600">Jefe de Logística</div>
+                  <div style="font-size:11px;color:var(--fg3)">Bono máximo</div>
+                </div>
+                <div style="font-family:var(--font-mono);font-weight:700;color:var(--danger)">$800.000 ✗</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg);border-radius:var(--r)">
+                <div>
+                  <div style="font-size:13px;font-weight:600">Auxiliar Landero</div>
+                  <div style="font-size:11px;color:var(--fg3)">Bono máximo</div>
+                </div>
+                <div style="font-family:var(--font-mono);font-weight:700;color:var(--danger)">$200.000 ✗</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg);border-radius:var(--r)">
+                <div>
+                  <div style="font-size:13px;font-weight:600">Auxiliar (2.°)</div>
+                  <div style="font-size:11px;color:var(--fg3)">Bono máximo</div>
+                </div>
+                <div style="font-family:var(--font-mono);font-weight:700;color:var(--danger)">$200.000 ✗</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JEFE / AUX: GPS -->
+    <div class="page" id="page-gps">
+      <div class="page-title">Comportamiento de Conducción (GPS)</div>
+      <div class="page-sub">Eventos de riesgo por vehículo · Septiembre 2026</div>
+
+      <div class="alert danger">
+        <span style="font-size:18px">🚨</span>
+        <div class="al-body">
+          <strong>WGX060 (MARTINEZ Luis)</strong> concentra la mayoría de eventos de riesgo: <strong>831 excesos de velocidad</strong>, 477 aceleraciones y 238 frenados bruscos. Requiere atención inmediata.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Eventos por vehículo</h3><p>Exceso vel. &gt;80 km/h · Aceleración brusca · Frenado brusco</p></div></div>
+        <div class="card-body" style="padding:16px 20px">
+          <svg class="chart-svg" viewBox="0 0 500 175" style="height:200px" preserveAspectRatio="none">
+            <line x1="65" y1="10" x2="65" y2="148" class="axis-line"/>
+            <line x1="65" y1="148" x2="498" y2="148" class="axis-line"/>
+            <!-- Groups: WGX060, TDU499, WGX061, WGX062, WGV233, WGD149, WGV232 -->
+            <!-- WGX060: 831 speed, 477 acc, 238 brk — max=831, scale=130/831 -->
+            <rect x="72"  y="18"  width="12" height="130" class="bar-spd" rx="1"/>
+            <rect x="84"  y="92"  width="12" height="56"  class="bar-acc" rx="1"/>
+            <rect x="96"  y="120" width="12" height="28"  class="bar-brk" rx="1"/>
+            <text x="96"  y="162" font-size="8" text-anchor="middle">WGX060</text>
+            <text x="96"  y="170" font-size="7" text-anchor="middle" fill="#9CA3AF">MARTINEZ</text>
+
+            <!-- TDU499: 234, 0, 0 -->
+            <rect x="142" y="111" width="12" height="37" class="bar-spd" rx="1"/>
+            <rect x="154" y="148" width="12" height="0"  class="bar-acc" rx="1"/>
+            <rect x="166" y="148" width="12" height="0"  class="bar-brk" rx="1"/>
+            <text x="154" y="162" font-size="8" text-anchor="middle">TDU499</text>
+
+            <!-- WGX061: 788, 380, 243 -->
+            <rect x="212" y="25"  width="12" height="123" class="bar-spd" rx="1"/>
+            <rect x="224" y="95"  width="12" height="53"  class="bar-acc" rx="1"/>
+            <rect x="236" y="110" width="12" height="38"  class="bar-brk" rx="1"/>
+            <text x="224" y="162" font-size="8" text-anchor="middle">WGX061</text>
+            <text x="224" y="170" font-size="7" text-anchor="middle" fill="#9CA3AF">MENDOZA</text>
+
+            <!-- WGX062: 85, 628, 197 -->
+            <rect x="282" y="135" width="12" height="13" class="bar-spd" rx="1"/>
+            <rect x="294" y="50"  width="12" height="98" class="bar-acc" rx="1"/>
+            <rect x="306" y="117" width="12" height="31" class="bar-brk" rx="1"/>
+            <text x="294" y="162" font-size="8" text-anchor="middle">WGX062</text>
+            <text x="294" y="170" font-size="7" text-anchor="middle" fill="#9CA3AF">ROA</text>
+
+            <!-- WGV233: 0, 13, 40 -->
+            <rect x="352" y="148" width="12" height="0"  class="bar-spd" rx="1"/>
+            <rect x="364" y="146" width="12" height="2"  class="bar-acc" rx="1"/>
+            <rect x="376" y="142" width="12" height="6"  class="bar-brk" rx="1"/>
+            <text x="364" y="162" font-size="8" text-anchor="middle">WGV233</text>
+            <text x="364" y="170" font-size="7" text-anchor="middle" fill="#9CA3AF">MARÍN</text>
+
+            <!-- WGD149: 6, 0, 0 -->
+            <rect x="412" y="147" width="12" height="1"  class="bar-spd" rx="1"/>
+            <rect x="424" y="148" width="12" height="0"  class="bar-acc" rx="1"/>
+            <rect x="436" y="148" width="12" height="0"  class="bar-brk" rx="1"/>
+            <text x="424" y="162" font-size="8" text-anchor="middle">WGD149</text>
+            <text x="424" y="170" font-size="7" text-anchor="middle" fill="#9CA3AF">NIÑO</text>
+
+            <!-- Legend -->
+            <rect x="68" y="14" width="8" height="8" class="bar-spd" rx="1"/>
+            <text x="78" y="21" font-size="8">Vel. &gt;80</text>
+            <rect x="120" y="14" width="8" height="8" class="bar-acc" rx="1"/>
+            <text x="130" y="21" font-size="8">Acel. brusca</text>
+            <rect x="192" y="14" width="8" height="8" class="bar-brk" rx="1"/>
+            <text x="202" y="21" font-size="8">Frenado brusco</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Detalle por vehículo</h3></div></div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr><th>Vehículo</th><th>Conductor</th><th>Exceso vel. (&gt;80)</th><th>Acel. brusca</th><th>Frenado brusco</th><th>Riesgo</th></tr>
+              </thead>
+              <tbody id="tb-gps"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JEFE / AUX: Pendientes por bodega -->
+    <div class="page" id="page-pendientes">
+      <div class="page-title">Pendientes por Bodega</div>
+      <div class="page-sub">78 pedidos reales + 200 notas de traslado · Las NT no generan bono</div>
+
+      <div class="alert warn">
+        <span style="font-size:18px">📦</span>
+        <div class="al-body">
+          El backlog de pedidos reales es manejable (<strong>78 pedidos</strong>). La mayoría del represamiento son NT concentradas en <strong>Bogotá y Bodemayor</strong> — van por transporte externo.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Pendientes por sede</h3><p>Pedidos reales vs notas de traslado</p></div></div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Bodega / Sede</th><th>Pedidos reales</th><th>Notas de traslado</th><th>Total</th></tr></thead>
+              <tbody id="tb-pendientes"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONDUCTOR: Mi panel -->
+    <div class="page" id="page-mi-panel">
+      <div class="page-title" id="cond-title">Mi Panel — ROA</div>
+      <div class="page-sub">Septiembre 2026 · Tus entregas y comisiones</div>
+
+      <div id="cond-kpis" class="kpi-grid"></div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><div><h3>Mi bono del mes</h3><p>Premios y castigos aplicados</p></div></div>
+          <div class="card-body" id="cond-bono-detail"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Esquema de incentivos</h3><p>Cómo se calcula tu comisión</p></div></div>
+          <div class="card-body">
+            <div class="inc-grid">
+              <div class="inc-box prize">
+                <h4>✅ Premios (conductor)</h4>
+                <div class="inc-row"><span>≤ 24 horas</span><span class="inc-amt">+$6.000</span></div>
+                <div class="inc-row"><span>≤ 2 días hábiles</span><span class="inc-amt">+$5.000</span></div>
+                <div class="inc-row"><span>≤ 5 días hábiles</span><span class="inc-amt">+$4.000</span></div>
+                <div class="inc-row"><span>Meta 85% (extra)</span><span class="inc-amt">+$350.000</span></div>
+              </div>
+              <div class="inc-box penalty">
+                <h4>❌ Castigos (resta)</h4>
+                <div class="inc-row"><span>5 – 10 días</span><span class="inc-amt">−$400</span></div>
+                <div class="inc-row"><span>10 – 20 días</span><span class="inc-amt">−$800</span></div>
+                <div class="inc-row"><span>20 – 30 días</span><span class="inc-amt">−$2.000</span></div>
+                <div class="inc-row"><span>&gt; 30 días</span><span class="inc-amt">−$2.000</span></div>
+              </div>
+            </div>
+            <div style="margin-top:12px;font-size:11px;color:var(--fg3)">Las NT no generan bono ni castigo. · Ayudante recibe la mitad.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Comportamiento GPS — Mi vehículo</h3><p>Eventos de riesgo registrados</p></div></div>
+        <div class="card-body" id="cond-gps-detail"></div>
+      </div>
+
+      <!-- MÉTRICAS CUMPLIMIENTO VS CASTIGADA -->
+      <div class="card">
+        <div class="card-head"><div><h3>Cumplimiento vs Castigadas</h3><p>Desglose de tus entregas por resultado de bono</p></div></div>
+        <div class="card-body">
+          <div id="cond-compliance"></div>
+        </div>
+      </div>
+
+      <!-- ENTREGAS DIARIAS -->
+      <div class="card">
+        <div class="card-head"><div><h3>Entregas diarias — Septiembre 2026</h3><p>Barras por día · color = bono acumulado del día</p></div></div>
+        <div class="card-body" style="padding:16px 20px">
+          <div id="daily-chart-wrap" style="overflow-x:auto"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:11px;color:var(--fg2)">
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--ok);margin-right:4px;vertical-align:middle"></span>Bonificadas</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--warn);margin-right:4px;vertical-align:middle"></span>Castigadas leve</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--danger);margin-right:4px;vertical-align:middle"></span>Castigadas fuerte</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--fg3);margin-right:4px;vertical-align:middle"></span>Pendiente/NT</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FACTURAS -->
+      <div class="card">
+        <div class="card-head">
+          <div><h3 id="fact-card-titulo">Mis facturas — …</h3><p>Tiempo de factura al tiempo de entrega · cálculo de bono por pedido</p></div>
+        </div>
+        <div class="card-body">
+          <div class="fact-summary" id="fact-summary"></div>
+          <div class="fact-filter">
+            <select id="fact-mes" onchange="cambiarMes(this.value)" style="font-weight:600;color:var(--accent)"></select>
+            <input type="text" id="fact-search" placeholder="Buscar factura o cliente…" oninput="filtrarFacturas()">
+            <select id="fact-estado" onchange="filtrarFacturas()">
+              <option value="">Todos los estados</option>
+              <option value="ok">A tiempo</option>
+              <option value="late">Con demora</option>
+              <option value="pend">Pendiente</option>
+            </select>
+            <select id="fact-ord" onchange="filtrarFacturas()">
+              <option value="fecha">Ordenar: fecha factura</option>
+              <option value="dias">Ordenar: días tardados</option>
+              <option value="bono">Ordenar: bono</option>
+            </select>
+            <span id="fact-count" style="font-size:12px;color:var(--fg3);margin-left:auto"></span>
+          </div>
+          <div class="tbl-wrap" style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
+            <table style="min-width:780px">
+              <thead style="position:sticky;top:0;z-index:2">
+                <tr>
+                  <th>Número</th>
+                  <th>Tipo</th>
+                  <th>Cliente</th>
+                  <th>Ciudad</th>
+                  <th>Fecha factura</th>
+                  <th>F. Promesa</th>
+                  <th>F. Entrega</th>
+                  <th>Días</th>
+                  <th>Estado</th>
+                  <th>Bono/Castigo</th>
+                </tr>
+              </thead>
+              <tbody id="tb-facturas"></tbody>
+            </table>
+          </div>
+          <!-- PAGINACIÓN -->
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:12px">
+            <div id="pag-info" style="font-size:12px;color:var(--fg3)"></div>
+            <div id="pag-btns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JEFE: Historial de Facturas -->
+    <div class="page" id="page-facturas-jefe">
+      <div class="page-title">Historial de Facturas — Septiembre 2026</div>
+      <div class="page-sub">Todas las facturas del equipo · filtra por conductor · cálculo de bono por pedido</div>
+
+      <!-- BUSCADOR RÁPIDO POR CONDUCTOR -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-body" style="padding:16px 20px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--fg2)">🔍 Buscar conductor</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+            <div style="position:relative;flex:1;min-width:200px;max-width:340px">
+              <input type="text" id="cond-quick-search"
+                placeholder="Nombre del conductor…"
+                oninput="condQuickSearch()"
+                style="width:100%;padding:10px 14px 10px 36px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--fg);font-size:14px;font-family:inherit">
+              <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">🔍</span>
+              <div id="cond-dropdown" hidden
+                style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-md);z-index:50;overflow:hidden">
+              </div>
+            </div>
+            <div class="cond-pills" id="jfact-cond-pills" style="flex:1;margin:0"></div>
+            <button onclick="jfactSelCond('', document.querySelector('#jfact-cond-pills .cond-pill'))"
+              style="padding:7px 14px;border-radius:var(--r);border:1.5px solid var(--border);background:var(--bg);color:var(--fg2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+              ✕ Limpiar
+            </button>
+          </div>
+          <!-- Tarjeta resumen del conductor encontrado -->
+          <div id="cond-quick-result" hidden style="margin-top:14px"></div>
+        </div>
+      </div>
+
+      <!-- KPIs globales -->
+      <div class="kpi-grid" id="jfact-kpis"></div>
+
+      <div class="card">
+        <div class="card-head" style="flex-wrap:wrap;gap:10px">
+          <div><h3 id="jfact-card-title">Todas las facturas</h3><p id="jfact-card-sub">Equipo completo</p></div>
+        </div>
+        <div class="card-body">
+          <!-- Barra resumen del conductor seleccionado -->
+          <div id="jfact-cond-summary" hidden style="margin-bottom:16px"></div>
+
+          <!-- Filtros de búsqueda -->
+          <div class="fact-filter" style="margin-bottom:14px">
+            <select id="jfact-mes" onchange="cambiarMes(this.value)" style="font-weight:600;color:var(--accent)"></select>
+            <input type="text" id="jfact-search" placeholder="Buscar factura, cliente o ciudad…" oninput="jfactFiltrar()">
+            <select id="jfact-estado" onchange="jfactFiltrar()">
+              <option value="">Todos los estados</option>
+              <option value="ok">A tiempo</option>
+              <option value="late">Con demora</option>
+              <option value="pend">Pendiente</option>
+              <option value="nt">Notas de traslado</option>
+            </select>
+            <select id="jfact-ord" onchange="jfactFiltrar()">
+              <option value="fecha">Ordenar: fecha factura</option>
+              <option value="cond">Ordenar: conductor</option>
+              <option value="dias">Ordenar: días tardados</option>
+              <option value="bono">Ordenar: bono</option>
+            </select>
+            <span id="jfact-count" style="font-size:12px;color:var(--fg3);margin-left:auto"></span>
+          </div>
+
+          <!-- Tabla con scroll -->
+          <div class="tbl-wrap" style="max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
+            <table style="min-width:900px">
+              <thead style="position:sticky;top:0;z-index:2">
+                <tr>
+                  <th>Número</th>
+                  <th>Tipo</th>
+                  <th>Conductor</th>
+                  <th>Cliente</th>
+                  <th>Ciudad</th>
+                  <th>Fecha factura</th>
+                  <th>F. Promesa</th>
+                  <th>F. Entrega</th>
+                  <th>Días</th>
+                  <th>Estado</th>
+                  <th>Bono cond.</th>
+                  <th>Bono ayud.</th>
+                </tr>
+              </thead>
+              <tbody id="tb-jfact"></tbody>
+            </table>
+          </div>
+
+          <!-- Paginación -->
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:12px">
+            <div id="jfact-pag-info" style="font-size:12px;color:var(--fg3)"></div>
+            <div id="jfact-pag-btns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AYUDANTE: Mi panel -->
+    <div class="page" id="page-ayudante">
+      <div class="page-title" id="ayud-title">Mi Panel</div>
+      <div class="page-sub">Septiembre 2026 · Tu comisión es el 50% del bono del conductor asignado</div>
+
+      <div id="ayud-kpis" class="kpi-grid"></div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Mi comisión del mes</h3><p>50% del bono neto del conductor</p></div></div>
+        <div class="card-body" id="ayud-bono-detail"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>Esquema de comisiones — Ayudante</h3></div></div>
+        <div class="card-body">
+          <div class="inc-grid">
+            <div class="inc-box prize">
+              <h4>✅ Premios (ayudante)</h4>
+              <div class="inc-row"><span>≤ 24 horas</span><span class="inc-amt">+$3.000</span></div>
+              <div class="inc-row"><span>≤ 2 días hábiles</span><span class="inc-amt">+$2.500</span></div>
+              <div class="inc-row"><span>≤ 5 días hábiles</span><span class="inc-amt">+$2.000</span></div>
+            </div>
+            <div class="inc-box penalty">
+              <h4>❌ Castigos (resta)</h4>
+              <div class="inc-row"><span>5 – 10 días</span><span class="inc-amt">−$200</span></div>
+              <div class="inc-row"><span>10 – 20 días</span><span class="inc-amt">−$400</span></div>
+              <div class="inc-row"><span>20 – 30 días</span><span class="inc-amt">−$1.000</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ── DATA ──────────────────────────────────────────── */
+const CONDUCTORES = {
+  ROA:      { nombre:'ROA — Julio Armando', short:'ROA', placa:'WGX062', pedidos:170, aTime:77,  h24:0, d2:11, bonoC:264200,  bonoA:132100,  metaC:1059600, metaA:529800,  metaH24:72  },
+  MARTINEZ: { nombre:'MARTINEZ — Luis',     short:'MART', placa:'WGX060', pedidos:147, aTime:59,  h24:0, d2:11, bonoC:201000,  bonoA:100500,  metaC:965200,  metaA:482600,  metaH24:62  },
+  MARIN:    { nombre:'MARÍN — José',        short:'MARÍN', placa:'WGV233', pedidos:70,  aTime:18,  h24:1, d2:0,  bonoC:35200,   bonoA:17600,   metaC:646000,  metaA:323000,  metaH24:30  },
+  MENDOZA:  { nombre:'MENDOZA — Luis',      short:'MEND.', placa:'WGX061', pedidos:200, aTime:14,  h24:0, d2:1,  bonoC:-110600, bonoA:-55300,  metaC:1188000, metaA:594000,  metaH24:85  },
+  NIÑO:     { nombre:'NIÑO — Ademir',       short:'NIÑO',  placa:'WGD149', pedidos:66,  aTime:11,  h24:0, d2:3,  bonoC:-1400,   bonoA:-700,    metaC:626000,  metaA:313000,  metaH24:28  },
+};
+
+const GPS = [
+  { placa:'WGX060', conductor:'MARTINEZ Luis',  vel:831, acc:477, brk:238 },
+  { placa:'TDU499', conductor:'—',              vel:234, acc:0,   brk:0   },
+  { placa:'WGX061', conductor:'MENDOZA Luis',   vel:788, acc:380, brk:243 },
+  { placa:'WGX062', conductor:'ROA Julio',      vel:85,  acc:628, brk:197 },
+  { placa:'WGV233', conductor:'MARÍN José',     vel:0,   acc:13,  brk:40  },
+  { placa:'WGD149', conductor:'NIÑO Ademir',    vel:6,   acc:0,   brk:0   },
+  { placa:'WGV232', conductor:'—',              vel:2,   acc:151, brk:55  },
+];
+
+const BODEGAS = [
+  { sede:'Bogotá',       ped:0,  nt:85 },
+  { sede:'Bodemayor',    ped:21, nt:55 },
+  { sede:'Caribe Verde', ped:19, nt:7  },
+  { sede:'Montería',     ped:0,  nt:18 },
+  { sede:'Soledad',      ped:13, nt:3  },
+  { sede:'Luzkal',       ped:7,  nt:8  },
+  { sede:'Valledupar',   ped:1,  nt:12 },
+  { sede:'La Plaza',     ped:7,  nt:5  },
+];
+
+const CIUDADES = [
+  { ciudad:'Barranquilla', n:301 },
+  { ciudad:'Soledad',      n:108 },
+  { ciudad:'Galapa',       n:67  },
+  { ciudad:'Palmar Varela',n:36  },
+  { ciudad:'Malambo',      n:33  },
+  { ciudad:'Santo Tomás',  n:16  },
+];
+
+/* ── USUARIOS ──────────────────────────────────────── */
+const USUARIOS = {
+  'admin':          { pass:'admin2026',  role:'admin',     cond:null,       nombre:'Administrador',     cargo:'Administrador del Sistema', sede:'Barranquilla', celular:'300 000 0000' },
+  'jefe.logistica': { pass:'jefe2026',  role:'jefe',      cond:null,       nombre:'Frank Hernández',     cargo:'Jefe de Logística',        sede:'Barranquilla', celular:'300 000 0001' },
+  'landero':        { pass:'aux2026',   role:'aux-jefe',  cond:null,       nombre:'Landero Pérez',     cargo:'Auxiliar de Jefatura',     sede:'Barranquilla', celular:'300 000 0002' },
+  'roa.julio':      { pass:'roa2026',   role:'conductor', cond:'ROA',      nombre:'Julio Armando Roa', cargo:'Conductor · WGX062',       sede:'Barranquilla', celular:'301 111 0001' },
+  'martinez.luis':  { pass:'mart2026',  role:'conductor', cond:'MARTINEZ', nombre:'Luis Martínez',     cargo:'Conductor · WGX060',       sede:'Barranquilla', celular:'301 111 0002' },
+  'marin.jose':     { pass:'marin2026', role:'conductor', cond:'MARIN',    nombre:'José Marín',        cargo:'Conductor · WGV233',       sede:'Barranquilla', celular:'301 111 0003' },
+  'mendoza.luis':   { pass:'mend2026',  role:'conductor', cond:'MENDOZA',  nombre:'Luis Mendoza',      cargo:'Conductor · WGX061',       sede:'Barranquilla', celular:'301 111 0004' },
+  'nino.ademir':    { pass:'nino2026',  role:'conductor', cond:'NIÑO',     nombre:'Ademir Niño',       cargo:'Conductor · WGD149',       sede:'Barranquilla', celular:'301 111 0005' },
+  'ayud.roa':       { pass:'ayud2026',  role:'ayudante',  cond:'ROA',      nombre:'Carlos Pérez',       cargo:'Ayudante · Ruta ROA',       sede:'Barranquilla', celular:'302 222 0001' },
+  'ayud.martinez':  { pass:'ayud2026',  role:'ayudante',  cond:'MARTINEZ', nombre:'Jhon Torres',        cargo:'Ayudante · Ruta MARTINEZ',  sede:'Barranquilla', celular:'302 222 0002' },
+  'ayud.marin':     { pass:'ayud2026',  role:'ayudante',  cond:'MARIN',    nombre:'Edwin Ospino',       cargo:'Ayudante · Ruta MARÍN',     sede:'Barranquilla', celular:'302 222 0003' },
+  'ayud.mendoza':   { pass:'ayud2026',  role:'ayudante',  cond:'MENDOZA',  nombre:'Ricardo Vargas',     cargo:'Ayudante · Ruta MENDOZA',   sede:'Barranquilla', celular:'302 222 0004' },
+  'ayud.nino':      { pass:'ayud2026',  role:'ayudante',  cond:'NIÑO',     nombre:'Andrés Blanco',      cargo:'Ayudante · Ruta NIÑO',      sede:'Barranquilla', celular:'302 222 0005' },
+};
+
+const MENUS = {
+  admin:     [['page-admin','⚙️ Administración'],['page-resumen','📊 Resumen'],['page-equipo','👥 Equipo'],['page-facturas-jefe','📄 Facturas'],['page-gps','🗺️ GPS'],['page-pendientes','📦 Pendientes']],
+  jefe:      [['page-resumen','📊 Resumen'],['page-equipo','👥 Equipo'],['page-facturas-jefe','📄 Facturas'],['page-gps','🗺️ GPS'],['page-pendientes','📦 Pendientes']],
+  'aux-jefe':[['page-equipo','👥 Equipo'],['page-gps','🗺️ GPS'],['page-pendientes','📦 Pendientes']],
+  conductor: [['page-mi-panel','🚚 Mi Panel']],
+  ayudante:  [['page-ayudante','🙋 Mi Panel']],
+};
+
+const ROLE_LABEL = { admin:'Administrador', jefe:'Jefe de Logística', 'aux-jefe':'Auxiliar de Jefatura', conductor:'Conductor', ayudante:'Ayudante' };
+
+
+/* ── SESSION ───────────────────────────────────────── */
+let session = { role:null, cond:null, usuario:null, user:null };
+
+function cargarSesion() {
+  try {
+    const s = JSON.parse(localStorage.getItem('inv_log_session')||'null');
+    if (s && USUARIOS[s.usuario]) {
+      session = { ...s, user: USUARIOS[s.usuario] }; // siempre toma el user fresco
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+function guardarSesion() {
+  try { localStorage.setItem('inv_log_session', JSON.stringify(session)); } catch(e) {}
+}
+function borrarSesion() {
+  try { localStorage.removeItem('inv_log_session'); } catch(e) {}
+}
+
+/* ── AUTH ───────────────────────────────────────────── */
+function togglePass() {
+  const inp = document.getElementById('inp-pass');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function doLogin() {
+  const usuario = (document.getElementById('inp-user').value||'').trim().toLowerCase();
+  const pass    = (document.getElementById('inp-pass').value||'').trim();
+  const errEl   = document.getElementById('login-error');
+  const u = USUARIOS[usuario];
+  if (!u || u.pass !== pass) {
+    errEl.style.display = 'block';
+    document.getElementById('inp-pass').value = '';
+    document.getElementById('inp-pass').focus();
+    return;
+  }
+  errEl.style.display = 'none';
+  session = { role:u.role, cond:u.cond, usuario, user:u };
+  guardarSesion();
+  iniciarApp();
+}
+
+function doLogout() {
+  borrarSesion();
+  session = { role:null, cond:null, usuario:null, user:null };
+  cerrarPerfil();
+  document.getElementById('login-screen').hidden = false;
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('inp-user').value = '';
+  document.getElementById('inp-pass').value = '';
+}
+
+/* ── PERFIL MODAL ───────────────────────────────────── */
+function abrirPerfil() {
+  const u = session.user;
+  if (!u) return;
+  const initials = u.nombre.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  document.getElementById('prof-avatar').textContent = initials;
+  const cData = u.cond ? CONDUCTORES[u.cond] : null;
+  const bonoLine = cData ? `<div class="profile-field"><span class="lbl">Bono neto sep.</span><span class="val" style="color:${cData.bonoC>=0?'var(--ok)':'var(--danger)'}">${cData.bonoC>=0?'':'-'}$${Math.abs(cData.bonoC).toLocaleString('es-CO')}</span></div>` : '';
+  const cumplLine = cData ? `<div class="profile-field"><span class="lbl">Cumplimiento</span><span class="val">${Math.round(cData.aTime/cData.pedidos*100)}%</span></div>` : '';
+
+  document.getElementById('prof-fields').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:17px;font-weight:700">${u.nombre}</div>
+      <div style="font-size:12px;color:var(--fg2);margin-top:3px">${u.cargo}</div>
+      <span class="chip info" style="margin-top:6px">${ROLE_LABEL[u.role]}</span>
+    </div>
+    <div class="profile-field"><span class="lbl">Usuario</span><span class="val mono" style="font-size:12px">${session.usuario}</span></div>
+    <div class="profile-field"><span class="lbl">Sede</span><span class="val">${u.sede}</span></div>
+    <div class="profile-field"><span class="lbl">Celular</span><span class="val">${u.celular}</span></div>
+    <div class="profile-field"><span class="lbl">Periodo activo</span><span class="val">Septiembre 2026</span></div>
+    <div class="profile-field"><span class="lbl">Empresa</span><span class="val">INVESAKK SAS</span></div>
+    ${bonoLine}${cumplLine}
+  `;
+  document.getElementById('modal-perfil').hidden = false;
+}
+
+function cerrarPerfil() {
+  document.getElementById('modal-perfil').hidden = true;
+}
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('modal-perfil').addEventListener('click', e => {
+  if (e.target === e.currentTarget) cerrarPerfil();
+});
+
+/* ── BUILD APP ──────────────────────────────────────── */
+function iniciarApp() {
+  const { role, cond, user } = session;
+  const menu = MENUS[role];
+
+  // Nav
+  const nombre = user?.nombre || 'Usuario';
+  const initials = nombre.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  const nameLabel = nombre.split(' ').slice(0,2).join(' ');
+  document.getElementById('nav-avatar').textContent = initials;
+  document.getElementById('nav-name').textContent = nameLabel;
+  document.getElementById('nav-role-label').textContent = ROLE_LABEL[role]||role;
+
+  const ni = document.getElementById('nav-items');
+  ni.innerHTML = '';
+  menu.forEach(([id, label], i) => {
+    const b = document.createElement('button');
+    b.className = 'nav-btn' + (i===0?' active':'');
+    b.textContent = label;
+    b.onclick = () => showPage(id, b);
+    ni.appendChild(b);
+  });
+
+  // Populate dynamic tables
+  buildProgConductores();
+  buildTbCiudades();
+  buildTbEquipo();
+  buildTbMeta();
+  buildTbGps();
+  buildTbPendientes();
+  if (cond) {
+    buildCondPanel(cond);
+    buildAyudPanel(cond);
+  }
+  if (role === 'jefe' || role === 'admin') {
+    buildJefaturaFacturas();
+  }
+
+  // Show first page
+  showPage(menu[0][0]);
+  document.getElementById('login-screen').hidden = true;
+  document.getElementById('app').classList.add('visible');
+}
+
+function showPage(pageId, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId)?.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    const allBtns = document.querySelectorAll('.nav-btn');
+    const menu = MENUS[session.role];
+    menu?.forEach(([id], i) => { if (id===pageId) allBtns[i]?.classList.add('active'); });
+  }
+}
+
+/* ── FORMATTERS ─────────────────────────────────────── */
+const fmt = n => (n<0?'−':'')+Math.abs(n).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).replace('COP','').trim();
+const pct = (a,b) => Math.round(a/b*100)+'%';
+const fmtDate = d => d ? new Date(d+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
+const diffDias = (f,e) => {
+  if (!f||!e) return null;
+  const ms = new Date(e+'T12:00:00') - new Date(f+'T12:00:00');
+  return Math.round(ms/86400000);
+};
+// Días hábiles aproximados (excluye sáb/dom) — fallback cuando no viene difDias del SQL
+const diasHabiles = (f,e) => {
+  if (!f||!e) return null;
+  let d = 0, cur = new Date(f+'T12:00:00'), end = new Date(e+'T12:00:00');
+  if (end <= cur) return 0;
+  while (cur < end) { cur.setDate(cur.getDate()+1); if (cur.getDay()!==0&&cur.getDay()!==6) d++; }
+  return d;
+};
+// Retorna días para bono: usa difDias (SQL) si está disponible, sino calcula
+const getDias = f => {
+  if (f.esMT) return null;
+  if (!f.fEntr) return null;
+  if (f.difDias !== undefined && f.difDias !== null && f.difDias !== '') return Number(f.difDias);
+  return diasHabiles(f.fPromesa || f.fFact, f.fEntr);
+};
+// Bono conductor según días
+const calcBono = (dh, esMT) => {
+  if (esMT||dh===null) return {val:0,label:'NT',cls:'bono-neu',chip:'neutral'};
+  if (dh<=0)  return {val:6000,  label:'+$6.000',  cls:'bono-pos', chip:'ok'};
+  if (dh<=1)  return {val:6000,  label:'+$6.000',  cls:'bono-pos', chip:'ok'};
+  if (dh<=2)  return {val:5000,  label:'+$5.000',  cls:'bono-pos', chip:'ok'};
+  if (dh<=5)  return {val:4000,  label:'+$4.000',  cls:'bono-pos', chip:'ok'};
+  if (dh<=10) return {val:-400,  label:'−$400',    cls:'bono-neg', chip:'warn'};
+  if (dh<=20) return {val:-800,  label:'−$800',    cls:'bono-neg', chip:'warn'};
+  if (dh<=30) return {val:-2000, label:'−$2.000',  cls:'bono-neg', chip:'danger'};
+  return      {val:-2000, label:'−$2.000',  cls:'bono-neg', chip:'danger'};
+};
+const estadoLabel = (dh,pend,esMT) => {
+  if (esMT)        return {t:'NT',         c:'neutral'};
+  if (pend)        return {t:'Pendiente',  c:'info'};
+  if (dh===null)   return {t:'—',          c:'neutral'};
+  if (dh<=0)       return {t:'Mismo día',  c:'ok'};
+  if (dh<=5)       return {t:'A tiempo',   c:'ok'};
+  if (dh<=10)      return {t:'5-10 días',  c:'warn'};
+  if (dh<=20)      return {t:'10-20 días', c:'warn'};
+  return           {t:'>20 días',          c:'danger'};
+};
+const diasCls = dh => dh===null?'dias-3':dh<=0?'dias-0':dh<=2?'dias-0':dh<=5?'dias-1':dh<=10?'dias-2':dh<=20?'dias-3':'dias-4';
+// Detecta si el tipo es nota de traslado
+const tipoEsMT = t => /^NT/i.test(String(t||'').trim());
+// Chip de tipo de documento
+const tipoChip = t => {
+  const s = String(t||'').toUpperCase();
+  if (s.startsWith('NT')) return `<span class="chip neutral" style="font-size:10px">${s}</span>`;
+  if (s==='FEPA')         return `<span class="chip info"    style="font-size:10px">FEPA</span>`;
+  if (s==='G1AG')         return `<span class="chip purple"  style="font-size:10px">G1AG</span>`;
+  return `<span class="chip neutral" style="font-size:10px">${s||'—'}</span>`;
+};
+const fmtPeso  = v => v ? Number(v).toLocaleString('es-CO',{maximumFractionDigits:1})+' kg' : '—';
+const fmtValor = v => v ? '$'+Number(v).toLocaleString('es-CO',{maximumFractionDigits:0}) : '—';
+
+/* ── TABLE BUILDERS ─────────────────────────────────── */
+function buildProgConductores() {
+  const el = document.getElementById('prog-conductores');
+  el.innerHTML = Object.values(CONDUCTORES).map(c => {
+    const p = Math.round(c.aTime/c.pedidos*100);
+    const color = p>=85?'var(--ok)':p>=50?'var(--warn)':'var(--danger)';
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span style="font-weight:500">${c.short}</span>
+        <span style="font-family:var(--font-mono);font-weight:600;color:${color}">${p}%</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${p}%;background:${color}"></div></div>
+      <div style="font-size:11px;color:var(--fg3);margin-top:3px">${c.aTime} de ${c.pedidos} a tiempo</div>
+    </div>`;
+  }).join('');
+}
+
+function buildTbCiudades() {
+  const total = CIUDADES.reduce((a,c)=>a+c.n,0);
+  document.getElementById('tb-ciudades').innerHTML = CIUDADES.map(c => {
+    const p = Math.round(c.n/total*100);
+    return `<tr>
+      <td style="font-weight:500">${c.ciudad}</td>
+      <td><span class="mono">${c.n}</span></td>
+      <td style="min-width:140px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="prog-bar" style="flex:1;height:5px"><div class="prog-fill" style="width:${p}%;background:var(--accent)"></div></div>
+          <span class="mono" style="font-size:11px;width:30px;text-align:right">${p}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function buildTbEquipo() {
+  document.getElementById('tb-equipo').innerHTML = Object.values(CONDUCTORES).map(c => {
+    const p = Math.round(c.aTime/c.pedidos*100);
+    const pos = c.bonoC >= 0;
+    const statusChip = p>=85 ? '<span class="chip ok">✓ Meta</span>' : p>=40 ? '<span class="chip warn">En proceso</span>' : '<span class="chip danger">Bajo</span>';
+    return `<tr>
+      <td style="font-weight:600">${c.short}</td>
+      <td><span class="chip neutral">${c.placa}</span></td>
+      <td class="mono">${c.pedidos}</td>
+      <td class="mono">${c.aTime}</td>
+      <td><span class="chip ${p>=85?'ok':p>=40?'warn':'danger'}">${p}%</span></td>
+      <td class="mono" style="color:${pos?'var(--ok)':'var(--danger)'};font-weight:600">${pos?'':'−'}$${Math.abs(c.bonoC).toLocaleString('es-CO')}</td>
+      <td class="mono" style="color:${c.bonoA>=0?'var(--ok)':'var(--danger)'}">${c.bonoA>=0?'':'−'}$${Math.abs(c.bonoA).toLocaleString('es-CO')}</td>
+      <td>${statusChip}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildTbMeta() {
+  document.getElementById('tb-meta').innerHTML = Object.values(CONDUCTORES).map(c => {
+    return `<tr>
+      <td style="font-weight:500">${c.short}</td>
+      <td class="mono">${c.metaH24}</td>
+      <td class="mono" style="color:var(--ok);font-weight:600">$${c.metaC.toLocaleString('es-CO')}</td>
+      <td class="mono" style="color:var(--ok)">$${c.metaA.toLocaleString('es-CO')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildTbGps() {
+  const maxVal = 831;
+  document.getElementById('tb-gps').innerHTML = GPS.map(g => {
+    const risk = (g.vel+g.acc+g.brk);
+    const level = risk>1000?'danger':risk>200?'warn':'ok';
+    const labelMap = {danger:'Alto riesgo', warn:'Moderado', ok:'Normal'};
+    const bw = n => `<span class="mini-bar" style="width:${Math.max(2,Math.round(n/maxVal*80))}px;background:var(--${n===g.vel?'danger':n===g.acc?'warn':'purple'})"></span> ${n}`;
+    return `<tr>
+      <td><span class="chip neutral">${g.placa}</span></td>
+      <td style="font-weight:500">${g.conductor}</td>
+      <td>${bw(g.vel)}</td>
+      <td>${bw(g.acc)}</td>
+      <td>${bw(g.brk)}</td>
+      <td><span class="chip ${level}">${labelMap[level]}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function buildTbPendientes() {
+  document.getElementById('tb-pendientes').innerHTML = BODEGAS.map(b => {
+    const tot = b.ped+b.nt;
+    const urgente = b.ped>10?'danger':b.ped>0?'warn':'ok';
+    return `<tr>
+      <td style="font-weight:500">${b.sede}</td>
+      <td><span class="chip ${urgente}">${b.ped}</span></td>
+      <td class="mono">${b.nt}</td>
+      <td class="mono" style="font-weight:600">${tot}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildCondPanel(key) {
+  const c = CONDUCTORES[key];
+  if (!c) return;
+  const p = Math.round(c.aTime/c.pedidos*100);
+  const pos = c.bonoC >= 0;
+  document.getElementById('cond-title').textContent = `Mi Panel — ${c.short}`;
+
+  document.getElementById('cond-kpis').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Mis pedidos</div><div class="kpi-value">${c.pedidos}</div><div class="kpi-meta">Septiembre 2026</div></div>
+    <div class="kpi"><div class="kpi-label">Entregados a tiempo</div><div class="kpi-value ${p>=50?'ok':'warn'}">${c.aTime}</div><div class="kpi-meta">≤5 días hábiles</div></div>
+    <div class="kpi"><div class="kpi-label">Cumplimiento</div><div class="kpi-value ${p>=85?'ok':p>=50?'warn':'danger'}">${p}%</div><div class="kpi-meta">Meta: 85%</div></div>
+    <div class="kpi"><div class="kpi-label">Bono neto</div><div class="kpi-value ${pos?'ok':'danger'}">${pos?'':'−'}$${Math.abs(c.bonoC).toLocaleString('es-CO')}</div><div class="kpi-meta">Conductor mes</div></div>
+    <div class="kpi"><div class="kpi-label">Vehículo</div><div class="kpi-value" style="font-size:20px">${c.placa}</div><div class="kpi-meta">Placa asignada</div></div>
+    <div class="kpi"><div class="kpi-label">≤24h / ≤2d</div><div class="kpi-value ok">${c.h24} / ${c.d2}</div><div class="kpi-meta">Entregas ultra-rápidas</div></div>
+  `;
+
+  document.getElementById('cond-bono-detail').innerHTML = `
+    <div style="display:grid;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--ok-s);border-radius:var(--r)">
+        <div><span style="font-size:13px;font-weight:600">Premios por rapidez</span><br><span style="font-size:11px;color:var(--fg3)">≤24h (${c.h24} ped.) · ≤2d (${c.d2} ped.)</span></div>
+        <span style="font-family:var(--font-mono);font-weight:700;color:var(--ok)">Premio</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:${c.bonoC<0?'var(--danger-s)':'var(--ok-s)'};border-radius:var(--r)">
+        <div><span style="font-size:14px;font-weight:700">Bono neto conductor</span></div>
+        <span style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:${pos?'var(--ok)':'var(--danger)'}">${pos?'':'-'}$${Math.abs(c.bonoC).toLocaleString('es-CO')}</span>
+      </div>
+      <div style="padding:10px 14px;background:var(--accent-s);border-radius:var(--r);font-size:12px;color:var(--fg2)">
+        🎯 Si alcanzas el 85%: bono proyectado <strong style="color:var(--ok)">$${c.metaC.toLocaleString('es-CO')}</strong> (incluye extra $350.000)
+      </div>
+    </div>
+  `;
+
+  buildComplianceMetrics(key);
+  buildDailyChart(key);
+  buildFacturas(key);
+
+  const gpsData = GPS.find(g => g.placa === c.placa);
+  if (gpsData) {
+    const risk = gpsData.vel+gpsData.acc+gpsData.brk;
+    const level = risk>1000?'danger':risk>200?'warn':'ok';
+    const msgs = {danger:'⚠️ Nivel alto. Reduce velocidad y evita maniobras bruscas.',warn:'📋 Nivel moderado. Hay oportunidad de mejora.',ok:'✅ Comportamiento adecuado. ¡Sigue así!'};
+    document.getElementById('cond-gps-detail').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
+        <div style="text-align:center;padding:14px;background:var(--danger-s);border-radius:var(--r)">
+          <div style="font-size:28px;font-weight:800;color:var(--danger)">${gpsData.vel}</div>
+          <div style="font-size:11px;color:var(--fg2)">Exceso vel. (&gt;80)</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:var(--warn-s);border-radius:var(--r)">
+          <div style="font-size:28px;font-weight:800;color:var(--warn)">${gpsData.acc}</div>
+          <div style="font-size:11px;color:var(--fg2)">Acel. brusca</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:var(--purple-s);border-radius:var(--r)">
+          <div style="font-size:28px;font-weight:800;color:var(--purple)">${gpsData.brk}</div>
+          <div style="font-size:11px;color:var(--fg2)">Frenado brusco</div>
+        </div>
+      </div>
+      <div class="alert ${level}"><span style="font-size:16px">🚘</span><div class="al-body">${msgs[level]}</div></div>
+    `;
+  }
+}
+
+function buildAyudPanel(condKey) {
+  const c = CONDUCTORES[condKey];
+  if (!c) return;
+  const u   = session.user;
+  const p   = Math.round(c.aTime / c.pedidos * 100);
+  const pos = c.bonoA >= 0;
+  const col = { ROA:'#1D4ED8', MARTINEZ:'#7C3AED', MARIN:'#059669', MENDOZA:'#D97706', NIÑO:'#DC2626' }[condKey] || 'var(--accent)';
+  const initials = (u?.nombre||'AY').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+
+  document.getElementById('ayud-title').textContent = `Mi Panel — ${u?.nombre || 'Ayudante'}`;
+
+  // Tarjeta de perfil personal
+  const profileCard = `
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-body" style="padding:20px">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <div style="width:56px;height:56px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0">${initials}</div>
+          <div style="flex:1;min-width:140px">
+            <div style="font-size:18px;font-weight:700">${u?.nombre||'Ayudante'}</div>
+            <div style="font-size:13px;color:var(--fg2);margin-top:2px">${u?.cargo||'Ayudante de Conductor'}</div>
+            <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+              <span class="chip info">Ayudante</span>
+              <span class="chip neutral">Sede: ${u?.sede||'Barranquilla'}</span>
+              <span class="chip neutral">📞 ${u?.celular||'—'}</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.4px">Conductor asignado</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:4px;justify-content:flex-end">
+              <span style="width:10px;height:10px;border-radius:50%;background:${col}"></span>
+              <span style="font-size:15px;font-weight:700;color:${col}">${c.short}</span>
+            </div>
+            <div style="font-size:11px;color:var(--fg3);margin-top:2px">${c.placa}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  // Insertar tarjeta antes de los KPIs si no existe
+  const page = document.getElementById('page-ayudante');
+  if (page && !document.getElementById('ayud-profile-card')) {
+    const div = document.createElement('div');
+    div.id = 'ayud-profile-card';
+    div.innerHTML = profileCard;
+    page.insertBefore(div, page.querySelector('.kpi-grid') || page.firstChild.nextSibling);
+  } else if (document.getElementById('ayud-profile-card')) {
+    document.getElementById('ayud-profile-card').innerHTML = profileCard;
+  }
+
+  document.getElementById('ayud-kpis').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Pedidos de la ruta</div><div class="kpi-value">${c.pedidos}</div><div class="kpi-meta">Ruta ${c.short} · ${c.placa}</div></div>
+    <div class="kpi"><div class="kpi-label">Entregas a tiempo</div><div class="kpi-value ${p>=50?'ok':'warn'}">${c.aTime}</div><div class="kpi-meta">≤5 días hábiles</div></div>
+    <div class="kpi"><div class="kpi-label">Cumplimiento</div><div class="kpi-value ${p>=85?'ok':p>=50?'warn':'danger'}">${p}%</div><div class="kpi-meta">Meta: 85%</div></div>
+    <div class="kpi"><div class="kpi-label">Tu bono neto</div><div class="kpi-value ${pos?'ok':'danger'}">${pos?'':'−'}$${Math.abs(c.bonoA).toLocaleString('es-CO')}</div><div class="kpi-meta">50% del bono conductor</div></div>
+    <div class="kpi"><div class="kpi-label">Bono meta 85%</div><div class="kpi-value ok" style="font-size:20px">$${c.metaA.toLocaleString('es-CO')}</div><div class="kpi-meta">Proyectado si cumplen meta</div></div>
+  `;
+
+  document.getElementById('ayud-bono-detail').innerHTML = `
+    <div style="display:grid;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg);border-radius:var(--r)">
+        <div>
+          <div style="font-size:13px;font-weight:600">Conductor asignado</div>
+          <div style="font-size:11px;color:var(--fg3)">${c.nombre||c.short} · ${c.placa}</div>
+        </div>
+        <span class="chip" style="background:${col}20;color:${col}">${c.short}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg);border-radius:var(--r)">
+        <div><span style="font-size:13px">Bono neto conductor</span></div>
+        <span class="mono" style="color:${c.bonoC>=0?'var(--ok)':'var(--danger)'}">${c.bonoC>=0?'+':'-'}$${Math.abs(c.bonoC).toLocaleString('es-CO')}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:${pos?'var(--ok-s)':'var(--danger-s)'};border-radius:var(--r);border:2px solid ${pos?'var(--ok)':'var(--danger)'}">
+        <div>
+          <div style="font-size:14px;font-weight:700">Tu bono neto (50%)</div>
+          <div style="font-size:11px;color:var(--fg3);margin-top:2px">Septiembre 2026</div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:20px;font-weight:800;color:${pos?'var(--ok)':'var(--danger)'}">${pos?'':'-'}$${Math.abs(c.bonoA).toLocaleString('es-CO')}</span>
+      </div>
+      <div style="padding:10px 14px;background:var(--accent-s);border-radius:var(--r);font-size:12px;color:var(--fg2)">
+        🎯 Si el equipo alcanza el 85%: tu bono proyectado <strong style="color:var(--ok)">$${c.metaA.toLocaleString('es-CO')}</strong>
+      </div>
+    </div>
+  `;
+}
+
+/* ── FACTURAS DATA ──────────────────────────────────── */
+// Campos: num, cliente, ciudad, fFact (YYYY-MM-DD), fEntr (YYYY-MM-DD|null=pend), esMT
+const FACTURAS = {
+  ROA: [
+    {num:'FA-089431',cliente:'Navarro e Hijos Constructores',ciudad:'Barranquilla',fFact:'2026-09-01',fEntr:'2026-09-01',esMT:false},
+    {num:'FA-089432',cliente:'Jacur SAS',ciudad:'Soledad',fFact:'2026-09-01',fEntr:'2026-09-02',esMT:false},
+    {num:'FA-089445',cliente:'A Construir S.A.',ciudad:'Galapa',fFact:'2026-09-02',fEntr:'2026-09-04',esMT:false},
+    {num:'FA-089461',cliente:'Inversiones Vergara',ciudad:'Barranquilla',fFact:'2026-09-03',fEntr:'2026-09-05',esMT:false},
+    {num:'FA-089478',cliente:'Georgina Del Carmen Avendaño',ciudad:'Malambo',fFact:'2026-09-04',fEntr:'2026-09-10',esMT:false},
+    {num:'FA-089490',cliente:'Tammuz Inversiones',ciudad:'Barranquilla',fFact:'2026-09-05',fEntr:'2026-09-08',esMT:false},
+    {num:'FA-089502',cliente:'Materiales El Constructor',ciudad:'Palmar Varela',fFact:'2026-09-06',fEntr:'2026-09-07',esMT:false},
+    {num:'FA-089515',cliente:'Ingeniería Caribe',ciudad:'Barranquilla',fFact:'2026-09-08',fEntr:'2026-09-09',esMT:false},
+    {num:'FA-089530',cliente:'Ferretería La 30',ciudad:'Soledad',fFact:'2026-09-08',fEntr:'2026-09-16',esMT:false},
+    {num:'FA-089541',cliente:'Construcciones del Norte',ciudad:'Santo Tomás',fFact:'2026-09-09',fEntr:'2026-09-11',esMT:false},
+    {num:'FA-089558',cliente:'Navarro e Hijos Constructores',ciudad:'Barranquilla',fFact:'2026-09-10',fEntr:'2026-09-10',esMT:false},
+    {num:'FA-089572',cliente:'Jacur SAS',ciudad:'Galapa',fFact:'2026-09-11',fEntr:'2026-09-25',esMT:false},
+    {num:'FA-089589',cliente:'Distrib. Materiales Sur',ciudad:'Barranquilla',fFact:'2026-09-12',fEntr:'2026-09-13',esMT:false},
+    {num:'FA-089601',cliente:'A Construir S.A.',ciudad:'Malambo',fFact:'2026-09-15',fEntr:'2026-09-16',esMT:false},
+    {num:'FA-089617',cliente:'Cementos del Caribe',ciudad:'Barranquilla',fFact:'2026-09-15',fEntr:'2026-09-17',esMT:false},
+    {num:'NT-011234',cliente:'Bodega Bodemayor',ciudad:'Barranquilla',fFact:'2026-09-16',fEntr:'2026-09-16',esMT:true},
+    {num:'FA-089635',cliente:'Inversiones Vergara',ciudad:'Soledad',fFact:'2026-09-17',fEntr:'2026-09-18',esMT:false},
+    {num:'FA-089648',cliente:'Jacur SAS',ciudad:'Barranquilla',fFact:'2026-09-18',fEntr:'2026-09-19',esMT:false},
+    {num:'FA-089659',cliente:'Tammuz Inversiones',ciudad:'Galapa',fFact:'2026-09-19',fEntr:null,esMT:false},
+    {num:'FA-089671',cliente:'Ferretería Central',ciudad:'Barranquilla',fFact:'2026-09-22',fEntr:null,esMT:false},
+  ],
+  MARTINEZ: [
+    {num:'FA-089433',cliente:'Materiales El Constructor',ciudad:'Barranquilla',fFact:'2026-09-01',fEntr:'2026-09-02',esMT:false},
+    {num:'FA-089434',cliente:'Cementos del Caribe',ciudad:'Soledad',fFact:'2026-09-01',fEntr:'2026-09-03',esMT:false},
+    {num:'FA-089448',cliente:'Construcciones del Norte',ciudad:'Barranquilla',fFact:'2026-09-02',fEntr:'2026-09-04',esMT:false},
+    {num:'FA-089463',cliente:'Ingeniería Caribe',ciudad:'Galapa',fFact:'2026-09-03',fEntr:'2026-09-10',esMT:false},
+    {num:'FA-089475',cliente:'Navarro e Hijos Constructores',ciudad:'Barranquilla',fFact:'2026-09-04',fEntr:'2026-09-05',esMT:false},
+    {num:'FA-089488',cliente:'Ferretería La 30',ciudad:'Malambo',fFact:'2026-09-05',fEntr:'2026-09-06',esMT:false},
+    {num:'FA-089499',cliente:'A Construir S.A.',ciudad:'Barranquilla',fFact:'2026-09-06',fEntr:'2026-09-08',esMT:false},
+    {num:'FA-089511',cliente:'Distrib. Materiales Sur',ciudad:'Palmar Varela',fFact:'2026-09-08',fEntr:'2026-09-24',esMT:false},
+    {num:'FA-089525',cliente:'Inversiones Vergara',ciudad:'Barranquilla',fFact:'2026-09-09',fEntr:'2026-09-09',esMT:false},
+    {num:'FA-089539',cliente:'Jacur SAS',ciudad:'Soledad',fFact:'2026-09-10',fEntr:'2026-09-12',esMT:false},
+    {num:'FA-089553',cliente:'Tammuz Inversiones',ciudad:'Barranquilla',fFact:'2026-09-11',fEntr:'2026-09-11',esMT:false},
+    {num:'NT-011198',cliente:'Bodega Caribe Verde',ciudad:'Barranquilla',fFact:'2026-09-12',fEntr:'2026-09-12',esMT:true},
+    {num:'FA-089568',cliente:'Materiales El Constructor',ciudad:'Barranquilla',fFact:'2026-09-12',fEntr:'2026-09-18',esMT:false},
+    {num:'FA-089581',cliente:'Navarro e Hijos Constructores',ciudad:'Galapa',fFact:'2026-09-15',fEntr:'2026-09-15',esMT:false},
+    {num:'FA-089596',cliente:'Construcciones del Norte',ciudad:'Barranquilla',fFact:'2026-09-16',fEntr:'2026-09-22',esMT:false},
+    {num:'FA-089612',cliente:'A Construir S.A.',ciudad:'Malambo',fFact:'2026-09-17',fEntr:'2026-09-17',esMT:false},
+    {num:'FA-089628',cliente:'Cementos del Caribe',ciudad:'Barranquilla',fFact:'2026-09-18',fEntr:null,esMT:false},
+    {num:'FA-089641',cliente:'Ferretería La 30',ciudad:'Santo Tomás',fFact:'2026-09-19',fEntr:null,esMT:false},
+    {num:'FA-089655',cliente:'Jacur SAS',ciudad:'Barranquilla',fFact:'2026-09-22',fEntr:null,esMT:false},
+    {num:'FA-089668',cliente:'Ingeniería Caribe',ciudad:'Soledad',fFact:'2026-09-23',fEntr:null,esMT:false},
+  ],
+  MARIN: [
+    {num:'FA-089436',cliente:'Ferretería Central',ciudad:'Barranquilla',fFact:'2026-09-01',fEntr:'2026-09-01',esMT:false},
+    {num:'FA-089451',cliente:'Materiales La Plaza',ciudad:'Soledad',fFact:'2026-09-02',fEntr:'2026-09-08',esMT:false},
+    {num:'FA-089466',cliente:'A Construir S.A.',ciudad:'Barranquilla',fFact:'2026-09-03',fEntr:'2026-09-05',esMT:false},
+    {num:'FA-089480',cliente:'Construcciones Valledupar',ciudad:'Barranquilla',fFact:'2026-09-04',fEntr:'2026-09-15',esMT:false},
+    {num:'FA-089494',cliente:'Inversiones Vergara',ciudad:'Galapa',fFact:'2026-09-05',fEntr:'2026-09-06',esMT:false},
+    {num:'FA-089508',cliente:'Navarro e Hijos Constructores',ciudad:'Barranquilla',fFact:'2026-09-08',fEntr:'2026-09-18',esMT:false},
+    {num:'NT-011201',cliente:'Bodega Luzkal',ciudad:'Barranquilla',fFact:'2026-09-09',fEntr:'2026-09-09',esMT:true},
+    {num:'FA-089522',cliente:'Jacur SAS',ciudad:'Malambo',fFact:'2026-09-09',fEntr:'2026-09-09',esMT:false},
+    {num:'FA-089536',cliente:'Tammuz Inversiones',ciudad:'Barranquilla',fFact:'2026-09-10',fEntr:'2026-09-24',esMT:false},
+    {num:'FA-089549',cliente:'Cementos del Caribe',ciudad:'Palmar Varela',fFact:'2026-09-11',fEntr:'2026-09-22',esMT:false},
+    {num:'FA-089563',cliente:'Ferretería Central',ciudad:'Barranquilla',fFact:'2026-09-12',fEntr:'2026-09-26',esMT:false},
+    {num:'FA-089577',cliente:'Materiales La Plaza',ciudad:'Soledad',fFact:'2026-09-15',fEntr:null,esMT:false},
+    {num:'FA-089592',cliente:'Ingeniería Caribe',ciudad:'Barranquilla',fFact:'2026-09-16',fEntr:null,esMT:false},
+    {num:'FA-089607',cliente:'A Construir S.A.',ciudad:'Galapa',fFact:'2026-09-17',fEntr:null,esMT:false},
+    {num:'FA-089622',cliente:'Distrib. Materiales Sur',ciudad:'Barranquilla',fFact:'2026-09-18',fEntr:null,esMT:false},
+  ],
+  MENDOZA: [
+    {num:'FA-089437',cliente:'Tammuz Inversiones',ciudad:'Barranquilla',fFact:'2026-09-01',fEntr:'2026-09-01',esMT:false},
+    {num:'FA-089438',cliente:'Navarro e Hijos Constructores',ciudad:'Soledad',fFact:'2026-09-01',fEntr:'2026-09-03',esMT:false},
+    {num:'FA-089452',cliente:'Jacur SAS',ciudad:'Galapa',fFact:'2026-09-02',fEntr:'2026-09-12',esMT:false},
+    {num:'FA-089453',cliente:'Construcciones del Norte',ciudad:'Barranquilla',fFact:'2026-09-02',fEntr:'2026-09-16',esMT:false},
+    {num:'FA-089467',cliente:'Inversiones Vergara',ciudad:'Malambo',fFact:'2026-09-03',fEntr:'2026-09-22',esMT:false},
+    {num:'FA-089468',cliente:'A Construir S.A.',ciudad:'Barranquilla',fFact:'2026-09-03',fEntr:'2026-09-04',esMT:false},
+    {num:'FA-089481',cliente:'Ferretería La 30',ciudad:'Palmar Varela',fFact:'2026-09-04',fEntr:'2026-09-18',esMT:false},
+    {num:'FA-089482',cliente:'Cementos del Caribe',ciudad:'Barranquilla',fFact:'2026-09-04',fEntr:'2026-09-25',esMT:false},
+    {num:'FA-089495',cliente:'Georgina Del Carmen Avendaño',ciudad:'Santo Tomás',fFact:'2026-09-05',fEntr:'2026-09-24',esMT:false},
+    {num:'FA-089496',cliente:'Materiales El Constructor',ciudad:'Barranquilla',fFact:'2026-09-05',fEntr:'2026-09-09',esMT:false},
+    {num:'NT-011205',cliente:'Bodega Bodemayor',ciudad:'Barranquilla',fFact:'2026-09-08',fEntr:'2026-09-08',esMT:true},
+    {num:'NT-011206',cliente:'Bodega Caribe Verde',ciudad:'Barranquilla',fFact:'2026-09-08',fEntr:'2026-09-08',esMT:true},
+    {num:'FA-089509',cliente:'Jacur SAS',ciudad:'Barranquilla',fFact:'2026-09-09',fEntr:'2026-09-26',esMT:false},
+    {num:'FA-089510',cliente:'Tammuz Inversiones',ciudad:'Galapa',fFact:'2026-09-09',fEntr:'2026-09-22',esMT:false},
+    {num:'FA-089523',cliente:'A Construir S.A.',ciudad:'Barranquilla',fFact:'2026-09-10',fEntr:'2026-09-26',esMT:false},
+    {num:'FA-089524',cliente:'Navarro e Hijos Constructores',ciudad:'Malambo',fFact:'2026-09-10',fEntr:'2026-09-11',esMT:false},
+    {num:'FA-089537',cliente:'Inversiones Vergara',ciudad:'Barranquilla',fFact:'2026-09-11',fEntr:null,esMT:false},
+    {num:'FA-089538',cliente:'Ferretería Central',ciudad:'Soledad',fFact:'2026-09-11',fEntr:null,esMT:false},
+    {num:'FA-089550',cliente:'Construcciones del Norte',ciudad:'Barranquilla',fFact:'2026-09-12',fEntr:null,esMT:false},
+    {num:'FA-089551',cliente:'Cementos del Caribe',ciudad:'Galapa',fFact:'2026-09-12',fEntr:null,esMT:false},
+  ],
+  NIÑO: [
+    {num:'FA-089439',cliente:'Distrib. Materiales Sur',ciudad:'Barranquilla',fFact:'2026-09-01',fEntr:'2026-09-03',esMT:false},
+    {num:'FA-089454',cliente:'Ferretería La 30',ciudad:'Soledad',fFact:'2026-09-02',fEntr:'2026-09-08',esMT:false},
+    {num:'FA-089469',cliente:'Materiales La Plaza',ciudad:'Barranquilla',fFact:'2026-09-03',fEntr:'2026-09-04',esMT:false},
+    {num:'FA-089483',cliente:'Ingeniería Caribe',ciudad:'Galapa',fFact:'2026-09-04',fEntr:'2026-09-16',esMT:false},
+    {num:'FA-089497',cliente:'Navarro e Hijos Constructores',ciudad:'Barranquilla',fFact:'2026-09-05',fEntr:'2026-09-05',esMT:false},
+    {num:'FA-089511b',cliente:'Jacur SAS',ciudad:'Malambo',fFact:'2026-09-08',fEntr:'2026-09-09',esMT:false},
+    {num:'NT-011210',cliente:'Bodega La Plaza',ciudad:'Barranquilla',fFact:'2026-09-09',fEntr:'2026-09-09',esMT:true},
+    {num:'FA-089525b',cliente:'Tammuz Inversiones',ciudad:'Barranquilla',fFact:'2026-09-09',fEntr:'2026-09-22',esMT:false},
+    {num:'FA-089539b',cliente:'A Construir S.A.',ciudad:'Palmar Varela',fFact:'2026-09-10',fEntr:'2026-09-25',esMT:false},
+    {num:'FA-089553b',cliente:'Cementos del Caribe',ciudad:'Barranquilla',fFact:'2026-09-11',fEntr:'2026-09-11',esMT:false},
+    {num:'FA-089568b',cliente:'Construcciones del Norte',ciudad:'Soledad',fFact:'2026-09-12',fEntr:'2026-09-18',esMT:false},
+    {num:'FA-089582',cliente:'Inversiones Vergara',ciudad:'Barranquilla',fFact:'2026-09-15',fEntr:null,esMT:false},
+    {num:'FA-089597',cliente:'Ferretería Central',ciudad:'Galapa',fFact:'2026-09-16',fEntr:null,esMT:false},
+    {num:'FA-089613',cliente:'Materiales El Constructor',ciudad:'Barranquilla',fFact:'2026-09-17',fEntr:null,esMT:false},
+    {num:'FA-089629',cliente:'Jacur SAS',ciudad:'Barranquilla',fFact:'2026-09-19',fEntr:null,esMT:false},
+  ],
+};
+
+let factActual = [];
+let factFiltrada = [];
+let pagActual = 1;
+
+// Mes activo: YYYY-MM; '' = sin filtro (muestra todo)
+const mesHoy = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
+let mesActivo = mesHoy(); // por defecto: mes en curso
+
+const MES_NOMBRE = { '01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio',
+  '07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre' };
+const fmtMes = ym => { if(!ym) return 'Todos'; const [y,m]=ym.split('-'); return `${MES_NOMBRE[m]||m} ${y}`; };
+// Devuelve YYYY-MM de una factura; null si no tiene fecha
+const facMes  = f => f.fFact ? f.fFact.slice(0,7) : null;
+// Filtra por mes activo
+const enMesActivo = f => !mesActivo || facMes(f)===mesActivo;
+const PAG_SIZE = 10;
+
+function buildFacturas(key) {
+  const data = FACTURAS[key] || [];
+  // Enriquecer todo (todos los meses) — filtro de mes se aplica en filtrarFacturas
+  factActual = data.map(f => {
+    const dh    = getDias(f);
+    const bono  = calcBono(dh, f.esMT);
+    const estado = estadoLabel(dh, !f.fEntr, f.esMT);
+    return { ...f, dh, bono, estado };
+  });
+  actualizarSelectorMes(factActual, 'fact-mes');
+  filtrarFacturas();
+}
+
+function buildComplianceMetrics(key) {
+  const data = (FACTURAS[key]||[]).map(f => {
+    const dh = getDias(f);
+    return { ...f, dh, bono: calcBono(dh, f.esMT) };
+  });
+
+  const real   = data.filter(f => !f.esMT);
+  const entregadas = real.filter(f => f.fEntr);
+  const pend   = real.filter(f => !f.fEntr);
+  const nts    = data.filter(f => f.esMT);
+
+  // Segmentos de bonificación
+  const ultra  = entregadas.filter(f => f.dh <= 1);   // ≤24h
+  const rapid  = entregadas.filter(f => f.dh >= 2 && f.dh <= 2);
+  const aTime  = entregadas.filter(f => f.dh >= 3 && f.dh <= 5);
+  const leve   = entregadas.filter(f => f.dh >= 6 && f.dh <= 10);
+  const media  = entregadas.filter(f => f.dh >= 11 && f.dh <= 20);
+  const alta   = entregadas.filter(f => f.dh >= 21);
+
+  const bonoPos = entregadas.filter(f=>f.bono.val>0).reduce((s,f)=>s+f.bono.val,0);
+  const bonoNeg = entregadas.filter(f=>f.bono.val<0).reduce((s,f)=>s+f.bono.val,0);
+  const bonoNet = bonoPos + bonoNeg;
+
+  const totalEnt = entregadas.length || 1;
+  const seg = [
+    { label:'≤ 24 h · +$6.000/u', n:ultra.length,  color:'var(--ok)',     pct: Math.round(ultra.length/totalEnt*100) },
+    { label:'≤ 2 días · +$5.000/u',n:rapid.length,  color:'#16a34a',      pct: Math.round(rapid.length/totalEnt*100) },
+    { label:'≤ 5 días · +$4.000/u', n:aTime.length, color:'#65a30d',      pct: Math.round(aTime.length/totalEnt*100) },
+    { label:'5-10 días · −$400/u',  n:leve.length,  color:'var(--warn)',   pct: Math.round(leve.length/totalEnt*100)  },
+    { label:'10-20 días · −$800/u', n:media.length, color:'#f97316',      pct: Math.round(media.length/totalEnt*100) },
+    { label:'> 20 días · −$2.000/u',n:alta.length,  color:'var(--danger)', pct: Math.round(alta.length/totalEnt*100) },
+    { label:'Pendientes (sin bono)', n:pend.length,  color:'var(--fg3)',    pct: Math.round(pend.length/(real.length||1)*100) },
+    { label:'Notas de traslado',     n:nts.length,   color:'var(--border)', pct:0 },
+  ].filter(s=>s.n>0);
+
+  const el = document.getElementById('cond-compliance');
+  if (!el) return;
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px">
+      <div style="padding:14px;background:var(--ok-s);border-radius:var(--r);text-align:center">
+        <div style="font-size:28px;font-weight:800;color:var(--ok)">${ultra.length+rapid.length+aTime.length}</div>
+        <div style="font-size:11px;color:var(--fg2);margin-top:2px">Bonificadas (≤5d)</div>
+        <div style="font-size:12px;font-weight:700;color:var(--ok);margin-top:4px">+$${bonoPos.toLocaleString('es-CO')}</div>
+      </div>
+      <div style="padding:14px;background:var(--danger-s);border-radius:var(--r);text-align:center">
+        <div style="font-size:28px;font-weight:800;color:var(--danger)">${leve.length+media.length+alta.length}</div>
+        <div style="font-size:11px;color:var(--fg2);margin-top:2px">Castigadas (>5d)</div>
+        <div style="font-size:12px;font-weight:700;color:var(--danger);margin-top:4px">−$${Math.abs(bonoNeg).toLocaleString('es-CO')}</div>
+      </div>
+      <div style="padding:14px;background:var(--warn-s);border-radius:var(--r);text-align:center">
+        <div style="font-size:28px;font-weight:800;color:var(--warn)">${pend.length}</div>
+        <div style="font-size:11px;color:var(--fg2);margin-top:2px">Pendientes</div>
+        <div style="font-size:12px;color:var(--fg3);margin-top:4px">Sin bono aún</div>
+      </div>
+      <div style="padding:14px;background:${bonoNet>=0?'var(--ok-s)':'var(--danger-s)'};border-radius:var(--r);text-align:center;border:2px solid ${bonoNet>=0?'var(--ok)':'var(--danger)'}">
+        <div style="font-size:22px;font-weight:800;color:${bonoNet>=0?'var(--ok)':'var(--danger)'}">${bonoNet>=0?'+':'−'}$${Math.abs(bonoNet).toLocaleString('es-CO')}</div>
+        <div style="font-size:11px;color:var(--fg2);margin-top:2px">Bono neto calculado</div>
+        <div style="font-size:11px;color:var(--fg3);margin-top:4px">${entregadas.length} entregas</div>
+      </div>
+    </div>
+
+    <!-- stacked bar -->
+    <div style="margin-bottom:10px;font-size:12px;font-weight:600;color:var(--fg2)">Distribución de entregas entregadas</div>
+    <div style="height:20px;border-radius:100px;overflow:hidden;display:flex;background:var(--border)">
+      ${seg.filter(s=>s.label!=='Notas de traslado').map(s=>`<div style="width:${s.pct}%;background:${s.color};min-width:${s.n?2:0}px;transition:width .5s" title="${s.label}: ${s.n}"></div>`).join('')}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">
+      ${seg.map(s=>`
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--fg2)">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></span>
+          <span>${s.label}</span>
+          <strong style="color:var(--fg)">${s.n}</strong>
+          ${s.pct?`<span style="color:var(--fg3)">(${s.pct}%)</span>`:''}
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+function buildDailyChart(key) {
+  const wrap = document.getElementById('daily-chart-wrap');
+  if (!wrap) return;
+
+  const data = (FACTURAS[key]||[]).map(f => {
+    const dh = getDias(f);
+    return { ...f, dh, bono: calcBono(dh, f.esMT) };
+  });
+
+  // Agrupar por fecha de ENTREGA (fEntr) — solo entregadas y no NT
+  const byDay = {};
+  // También incluir NT por fecha de entrega
+  data.forEach(f => {
+    const d = f.fEntr || null;
+    if (!d) return;
+    if (!byDay[d]) byDay[d] = { n:0, bonoSum:0, items:[] };
+    byDay[d].n++;
+    byDay[d].bonoSum += f.bono.val;
+    byDay[d].items.push(f);
+  });
+
+  const days = Object.keys(byDay).sort();
+  if (!days.length) { wrap.innerHTML = '<p style="color:var(--fg3);font-size:13px">Sin entregas registradas.</p>'; return; }
+
+  const maxN = Math.max(...days.map(d=>byDay[d].n));
+  const BAR_W = 38, GAP = 8, PAD_L = 54, PAD_B = 44, PAD_T = 36, H = 160;
+  const totalW = Math.max(PAD_L + days.length*(BAR_W+GAP) + 20, 400);
+  const scale = (H - PAD_T - PAD_B) / (maxN || 1);
+
+  // Y grid lines
+  const gridVals = [];
+  for (let v=0; v<=maxN; v+= Math.max(1,Math.floor(maxN/4))) gridVals.push(v);
+
+  let svg = `<svg viewBox="0 0 ${totalW} ${H}" width="${totalW}" height="${H}" style="min-width:${totalW}px;overflow:visible">`;
+
+  // Grid
+  gridVals.forEach(v => {
+    const y = H - PAD_B - v*scale;
+    svg += `<line x1="${PAD_L}" y1="${y}" x2="${totalW-10}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
+    svg += `<text x="${PAD_L-6}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--fg3)">${v}</text>`;
+  });
+  svg += `<line x1="${PAD_L}" y1="${PAD_T}" x2="${PAD_L}" y2="${H-PAD_B}" stroke="var(--border)" stroke-width="1"/>`;
+
+  days.forEach((d, i) => {
+    const { n, bonoSum, items } = byDay[d];
+    const x = PAD_L + i*(BAR_W+GAP);
+    const barH = Math.max(4, n*scale);
+    const y = H - PAD_B - barH;
+
+    // Color de la barra según resultado neto del día
+    const hasPos  = items.some(f=>f.bono.val>0);
+    const hasNeg  = items.some(f=>f.bono.val<0);
+    const allNT   = items.every(f=>f.esMT);
+    const barColor = allNT ? 'var(--fg3)' : bonoSum > 0 ? 'var(--ok)' : bonoSum < 0 ? 'var(--danger)' : 'var(--warn)';
+
+    // Tooltip inline (hover)
+    const bonoTxt = bonoSum===0?'$0':bonoSum>0?`+$${bonoSum.toLocaleString('es-CO')}`:`-$${Math.abs(bonoSum).toLocaleString('es-CO')}`;
+    const dayLabel = new Date(d+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
+
+    svg += `<g class="day-bar" style="cursor:default">
+      <title>${dayLabel}: ${n} entrega${n!==1?'s':''} · Bono día: ${bonoTxt}</title>
+      <rect x="${x}" y="${y}" width="${BAR_W}" height="${barH}" rx="4" fill="${barColor}" opacity="0.85"/>
+      <!-- valor bono encima -->
+      <text x="${x+BAR_W/2}" y="${y-4}" text-anchor="middle" font-size="8" font-weight="700"
+        fill="${bonoSum>0?'var(--ok)':bonoSum<0?'var(--danger)':'var(--fg3)'}"
+        >${bonoTxt}</text>
+      <!-- cantidad dentro -->
+      ${barH>14?`<text x="${x+BAR_W/2}" y="${y+barH-5}" text-anchor="middle" font-size="9" font-weight="600" fill="white">${n}</text>`:''}
+      <!-- fecha eje X -->
+      <text x="${x+BAR_W/2}" y="${H-PAD_B+13}" text-anchor="middle" font-size="8" fill="var(--fg3)">${dayLabel}</text>
+    </g>`;
+  });
+
+  svg += `<text x="${PAD_L/2}" y="${H/2}" transform="rotate(-90,${PAD_L/2-8},${H/2})" text-anchor="middle" font-size="9" fill="var(--fg3)">Entregas</text>`;
+  svg += '</svg>';
+  wrap.innerHTML = svg;
+}
+
+function rowHtml(f) {
+  const dhStr = f.esMT ? '—' : f.dh===null ? '⏳' : f.dh;
+  const dcls  = f.esMT ? 'dias-3' : f.dh===null ? 'dias-3' : diasCls(f.dh);
+  const pend  = !f.fEntr && !f.esMT;
+  const fPromStr = f.fPromesa ? fmtDate(f.fPromesa) : (f.fFact ? fmtDate(f.fFact) : '—');
+  return `<tr>
+    <td><span class="mono" style="font-size:12px;font-weight:600;color:var(--accent)">${f.num}</span></td>
+    <td style="white-space:nowrap">${tipoChip(f.tipo)}</td>
+    <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px">${f.cliente||'—'}</td>
+    <td style="font-size:12px;color:var(--fg2)">${f.ciudad||'—'}</td>
+    <td class="mono" style="font-size:12px">${f.fFact?fmtDate(f.fFact):'—'}</td>
+    <td class="mono" style="font-size:12px;color:var(--fg3)">${fPromStr}</td>
+    <td class="mono" style="font-size:12px">${pend?'<span style="color:var(--warn)">Pendiente</span>':f.esMT?'—':fmtDate(f.fEntr)}</td>
+    <td><span class="dias-badge ${dcls}">${dhStr}${f.dh!==null&&!f.esMT?' d':''}</span></td>
+    <td><span class="chip ${f.estado.c}">${f.estado.t}</span></td>
+    <td class="bono-cell ${f.bono.cls}">${f.bono.label}</td>
+  </tr>`;
+}
+
+function renderPagina() {
+  const total = factFiltrada.length;
+  const totalPags = Math.max(1, Math.ceil(total / PAG_SIZE));
+  if (pagActual > totalPags) pagActual = totalPags;
+  const desde = (pagActual-1)*PAG_SIZE;
+  const slice = factFiltrada.slice(desde, desde+PAG_SIZE);
+
+  document.getElementById('tb-facturas').innerHTML = slice.map(rowHtml).join('');
+
+  // Info
+  const info = document.getElementById('pag-info');
+  if (info) info.textContent = total===0 ? 'Sin resultados' :
+    `Mostrando ${desde+1}–${Math.min(desde+PAG_SIZE,total)} de ${total} facturas`;
+
+  // Botones
+  const cont = document.getElementById('pag-btns');
+  if (!cont) return;
+  const btnStyle = (active) =>
+    `style="padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;border:1.5px solid ${active?'var(--accent)':'var(--border)'};background:${active?'var(--accent)':'var(--surface)'};color:${active?'#fff':'var(--fg2)'};cursor:pointer"`;
+
+  let html = `<button ${btnStyle(false)} onclick="irPag(${pagActual-1})" ${pagActual<=1?'disabled style="opacity:.4;cursor:default"':''}>‹ Ant.</button>`;
+
+  // ventana de páginas
+  const window_ = 2;
+  const pages = new Set([1, totalPags]);
+  for (let p=Math.max(1,pagActual-window_); p<=Math.min(totalPags,pagActual+window_); p++) pages.add(p);
+  let last = 0;
+  [...pages].sort((a,b)=>a-b).forEach(p => {
+    if (last && p-last>1) html += `<span style="padding:5px 4px;font-size:12px;color:var(--fg3)">…</span>`;
+    const act = p===pagActual;
+    html += `<button ${btnStyle(act)} onclick="irPag(${p})">${p}</button>`;
+    last = p;
+  });
+
+  html += `<button ${btnStyle(false)} onclick="irPag(${pagActual+1})" ${pagActual>=totalPags?'disabled style="opacity:.4;cursor:default"':''}>Sig. ›</button>`;
+  cont.innerHTML = html;
+}
+
+function irPag(p) {
+  const totalPags = Math.ceil(factFiltrada.length/PAG_SIZE)||1;
+  pagActual = Math.max(1, Math.min(p, totalPags));
+  renderPagina();
+  // scroll al inicio de la tabla
+  document.querySelector('.tbl-wrap')?.scrollTo({top:0,behavior:'smooth'});
+}
+
+function filtrarFacturas() {
+  const q   = (document.getElementById('fact-search')?.value||'').toLowerCase();
+  const est = document.getElementById('fact-estado')?.value||'';
+  const ord = document.getElementById('fact-ord')?.value||'fecha';
+
+  factFiltrada = factActual.filter(f => {
+    const matchMes = enMesActivo(f);
+    const matchQ = !q || f.num.toLowerCase().includes(q) || f.cliente.toLowerCase().includes(q) || f.ciudad.toLowerCase().includes(q);
+    const matchE = !est
+      || (est==='ok'   && f.dh!==null && f.dh<=5 && !f.esMT)
+      || (est==='late' && f.dh!==null && f.dh>5)
+      || (est==='pend' && !f.fEntr && !f.esMT);
+    return matchMes && matchQ && matchE;
+  }).sort((a,b) => {
+    if (ord==='dias') return (b.dh??-1)-(a.dh??-1);
+    if (ord==='bono') return b.bono.val - a.bono.val;
+    return a.fFact.localeCompare(b.fFact);
+  });
+
+  pagActual = 1;
+  document.getElementById('fact-count').textContent = `${factFiltrada.length} facturas`;
+  renderPagina();
+
+  // Summary sobre el mes activo
+  const enMes  = factActual.filter(enMesActivo);
+  const real   = enMes.filter(f=>!f.esMT);
+  const atTime = real.filter(f=>f.dh!==null&&f.dh<=5);
+  const pends  = real.filter(f=>!f.fEntr);
+  const nts    = enMes.filter(f=>f.esMT);
+  const bonoSum= real.filter(f=>f.fEntr).reduce((s,f)=>s+f.bono.val,0);
+  const pos = bonoSum>=0;
+  document.getElementById('fact-summary').innerHTML = `
+    <div class="fact-sum-box"><div class="lbl">Total facturas</div><div class="val">${real.length}</div></div>
+    <div class="fact-sum-box" style="background:var(--ok-s)"><div class="lbl" style="color:var(--ok)">A tiempo (≤5d)</div><div class="val" style="color:var(--ok)">${atTime.length}</div></div>
+    <div class="fact-sum-box" style="background:var(--warn-s)"><div class="lbl" style="color:var(--warn)">Pendientes</div><div class="val" style="color:var(--warn)">${pends.length}</div></div>
+    <div class="fact-sum-box" style="background:var(--border)"><div class="lbl">Notas traslado</div><div class="val" style="color:var(--fg3)">${nts.length}</div></div>
+    <div class="fact-sum-box" style="background:${pos?'var(--ok-s)':'var(--danger-s)'}"><div class="lbl" style="color:${pos?'var(--ok)':'var(--danger)'}">Bono calculado</div><div class="val" style="color:${pos?'var(--ok)':'var(--danger)'};font-size:16px">${pos?'':'−'}$${Math.abs(bonoSum).toLocaleString('es-CO')}</div></div>
+  `;
+}
+
+/* ── JEFE FACTURAS ──────────────────────────────────── */
+let jfactTodas   = [];   // todas las facturas enriquecidas
+let jfactFilt    = [];   // después de filtros
+let jfactCondSel = '';   // '' = todos
+let jfactPag     = 1;
+const JFACT_SIZE = 12;
+
+// ── Selector de mes ──────────────────────────────────────────
+function actualizarSelectorMes(filas, selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+
+  // Meses presentes en los datos
+  const meses = [...new Set(filas.map(f=>facMes(f)).filter(Boolean))].sort().reverse();
+  const hoy   = mesHoy();
+
+  // Si el mesActivo no existe en los datos, cambiar al más reciente (o mes actual si está)
+  if (mesActivo && !meses.includes(mesActivo)) {
+    mesActivo = meses.includes(hoy) ? hoy : (meses[0] || hoy);
+  }
+
+  const opts = meses.map(m => {
+    const label = fmtMes(m);
+    const esCurr = m === hoy;
+    return `<option value="${m}" ${m===mesActivo?'selected':''}>${label}${esCurr?' ★':''}</option>`;
+  });
+  if (meses.length > 1) opts.unshift(`<option value="" ${!mesActivo?'selected':''}>Todos los meses</option>`);
+  sel.innerHTML = opts.join('') || `<option value="${hoy}">${fmtMes(hoy)} ★</option>`;
+
+  // Actualizar títulos con el mes seleccionado
+  actualizarTitulosMes();
+}
+
+function cambiarMes(valor) {
+  mesActivo = valor;
+  // Sincronizar ambos selectores
+  ['fact-mes','jfact-mes'].forEach(id => {
+    const s = document.getElementById(id);
+    if (s) s.value = valor;
+  });
+  actualizarTitulosMes();
+  filtrarFacturas();
+  jfactFiltrar();
+}
+
+function actualizarTitulosMes() {
+  const label = mesActivo ? fmtMes(mesActivo) : 'Todos los meses';
+  const tc = document.getElementById('fact-card-titulo');
+  if (tc) tc.textContent = `Mis facturas — ${label}`;
+  const tj = document.querySelector('#page-facturas-jefe .page-title');
+  if (tj) tj.textContent = `Historial de Facturas — ${label}`;
+  const ts = document.querySelector('#page-facturas-jefe .page-sub');
+  if (ts) ts.textContent = `Todas las facturas del equipo · filtra por conductor · ${label}`;
+}
+
+// Agrega el nombre del conductor a cada factura y calcula bono
+function jfactEnriquecer() {
+  jfactTodas = [];
+  Object.entries(FACTURAS).forEach(([key, arr]) => {
+    const cNombre = CONDUCTORES[key]?.short || key;
+    arr.forEach(f => {
+      const dh   = getDias(f);
+      const bono = calcBono(dh, f.esMT);
+      const est  = estadoLabel(dh, !f.fEntr, f.esMT);
+      jfactTodas.push({ ...f, condKey:key, condNombre:cNombre, dh, bono, est });
+    });
+  });
+}
+
+function buildJefaturaFacturas() {
+  jfactEnriquecer();
+  actualizarSelectorMes(jfactTodas, 'jfact-mes');
+
+  // Pills conductores
+  const pills = document.getElementById('jfact-cond-pills');
+  if (!pills) return;
+  pills.innerHTML = `<button class="cond-pill active" data-key="" onclick="jfactSelCond('',this)">Todos</button>`
+    + Object.entries(CONDUCTORES).map(([k,c]) =>
+        `<button class="cond-pill" data-key="${k}" onclick="jfactSelCond('${k}',this)">${c.short}</button>`
+      ).join('');
+
+  jfactSelCond('', pills.querySelector('.cond-pill'));
+}
+
+function jfactSelCond(key, btn) {
+  jfactCondSel = key;
+  document.querySelectorAll('#jfact-cond-pills .cond-pill').forEach(b => b.classList.remove('active'));
+  btn?.classList.add('active');
+
+  // Título y subtítulo
+  const title = document.getElementById('jfact-card-title');
+  const sub   = document.getElementById('jfact-card-sub');
+  const sumEl = document.getElementById('jfact-cond-summary');
+
+  if (key) {
+    const c = CONDUCTORES[key];
+    const p = Math.round(c.aTime / c.pedidos * 100);
+    const pos = c.bonoC >= 0;
+    if (title) title.textContent = `Facturas — ${c.nombre || c.short}`;
+    if (sub)   sub.textContent   = `${c.pedidos} pedidos · ${p}% cumplimiento · Placa ${c.placa}`;
+    if (sumEl) {
+      sumEl.hidden = false;
+      sumEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">
+          <div style="padding:12px 14px;background:var(--bg);border-radius:var(--r)">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--fg3)">Pedidos</div>
+            <div style="font-size:22px;font-weight:800">${c.pedidos}</div>
+          </div>
+          <div style="padding:12px 14px;background:var(--ok-s);border-radius:var(--r)">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--ok)">A tiempo</div>
+            <div style="font-size:22px;font-weight:800;color:var(--ok)">${c.aTime} <span style="font-size:14px">(${p}%)</span></div>
+          </div>
+          <div style="padding:12px 14px;background:${pos?'var(--ok-s)':'var(--danger-s)'};border-radius:var(--r)">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:${pos?'var(--ok)':'var(--danger)'}">Bono conductor</div>
+            <div style="font-size:20px;font-weight:800;color:${pos?'var(--ok)':'var(--danger)'}">${pos?'':'-'}$${Math.abs(c.bonoC).toLocaleString('es-CO')}</div>
+          </div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:var(--r)">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--fg3)">Bono ayudante</div>
+            <div style="font-size:20px;font-weight:800;color:${c.bonoA>=0?'var(--ok)':'var(--danger)'}">${c.bonoA>=0?'':'-'}$${Math.abs(c.bonoA).toLocaleString('es-CO')}</div>
+          </div>
+        </div>`;
+    }
+  } else {
+    if (title) title.textContent = 'Todas las facturas';
+    const enM = jfactTodas.filter(enMesActivo).filter(f=>!f.esMT).length;
+    if (sub)   sub.textContent   = `Equipo completo · ${enM} pedidos reales · ${fmtMes(mesActivo)}`;
+    if (sumEl) sumEl.hidden = true;
+  }
+
+  jfactFiltrar();
+  jfactBuildKpis();
+}
+
+function jfactBuildKpis() {
+  const base  = (jfactCondSel ? jfactTodas.filter(f=>f.condKey===jfactCondSel) : jfactTodas).filter(enMesActivo);
+  const real  = base.filter(f=>!f.esMT);
+  const atm   = real.filter(f=>f.dh!==null && f.dh<=5);
+  const pends = real.filter(f=>!f.fEntr);
+  const nts   = base.filter(f=>f.esMT);
+  const bsum  = real.filter(f=>f.fEntr).reduce((s,f)=>s+f.bono.val,0);
+  const pos   = bsum>=0;
+  const el    = document.getElementById('jfact-kpis');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="kpi"><div class="kpi-label">Total facturas</div><div class="kpi-value">${real.length}</div><div class="kpi-meta">${nts.length} NT aparte</div></div>
+    <div class="kpi"><div class="kpi-label">A tiempo (≤5d)</div><div class="kpi-value ok">${atm.length}</div><div class="kpi-meta">${real.length?Math.round(atm.length/real.length*100):0}% del total entregado</div></div>
+    <div class="kpi"><div class="kpi-label">Pendientes</div><div class="kpi-value warn">${pends.length}</div><div class="kpi-meta">Sin fecha de entrega</div></div>
+    <div class="kpi"><div class="kpi-label">Bono calculado</div><div class="kpi-value ${pos?'ok':'danger'}">${pos?'':'-'}$${Math.abs(bsum).toLocaleString('es-CO')}</div><div class="kpi-meta">Neto conductores</div></div>
+  `;
+}
+
+function jfactFiltrar() {
+  const q    = (document.getElementById('jfact-search')?.value||'').toLowerCase();
+  const est  = document.getElementById('jfact-estado')?.value||'';
+  const ord  = document.getElementById('jfact-ord')?.value||'fecha';
+
+  let src = jfactCondSel ? jfactTodas.filter(f=>f.condKey===jfactCondSel) : jfactTodas;
+
+  jfactFilt = src.filter(f => {
+    const matchMes = enMesActivo(f);
+    const matchQ = !q ||
+      f.num.toLowerCase().includes(q) ||
+      (f.cliente||'').toLowerCase().includes(q) ||
+      (f.ciudad||'').toLowerCase().includes(q) ||
+      f.condNombre.toLowerCase().includes(q);
+    const matchE = !est
+      || (est==='ok'   && f.dh!==null && f.dh<=5 && !f.esMT)
+      || (est==='late' && f.dh!==null && f.dh>5)
+      || (est==='pend' && !f.fEntr && !f.esMT)
+      || (est==='nt'   && f.esMT);
+    return matchMes && matchQ && matchE;
+  }).sort((a,b) => {
+    if (ord==='cond') return a.condKey.localeCompare(b.condKey) || a.fFact.localeCompare(b.fFact);
+    if (ord==='dias') return (b.dh??-1)-(a.dh??-1);
+    if (ord==='bono') return b.bono.val - a.bono.val;
+    return a.fFact.localeCompare(b.fFact);
+  });
+
+  jfactPag = 1;
+  const cnt = document.getElementById('jfact-count');
+  if (cnt) cnt.textContent = `${jfactFilt.length} facturas`;
+  jfactRenderPag();
+}
+
+function jfactRenderPag() {
+  const total    = jfactFilt.length;
+  const totPags  = Math.max(1, Math.ceil(total/JFACT_SIZE));
+  if (jfactPag > totPags) jfactPag = totPags;
+  const desde    = (jfactPag-1)*JFACT_SIZE;
+  const slice    = jfactFilt.slice(desde, desde+JFACT_SIZE);
+
+  document.getElementById('tb-jfact').innerHTML = slice.map(f => {
+    const dhStr = f.esMT ? '—' : f.dh===null ? '⏳' : f.dh;
+    const dcls  = f.esMT||f.dh===null ? 'dias-3' : diasCls(f.dh);
+    const pend  = !f.fEntr && !f.esMT;
+    const cc    = COND_COLORS[f.condKey]||'var(--fg2)';
+    const bonoA = Math.round(f.bono.val/2);
+    const bonoALabel = bonoA===0?'—':bonoA>0?`+$${bonoA.toLocaleString('es-CO')}`:`−$${Math.abs(bonoA).toLocaleString('es-CO')}`;
+    const fPromStr = f.fPromesa ? fmtDate(f.fPromesa) : (f.fFact ? fmtDate(f.fFact) : '—');
+    return `<tr>
+      <td><span class="mono" style="font-size:11px;font-weight:600;color:var(--accent)">${f.num}</span></td>
+      <td style="white-space:nowrap">${tipoChip(f.tipo)}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:${cc}">
+        <span style="width:6px;height:6px;border-radius:50%;background:${cc};flex-shrink:0"></span>${f.condNombre}
+      </span></td>
+      <td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px">${f.cliente||'—'}</td>
+      <td style="font-size:12px;color:var(--fg2)">${f.ciudad||'—'}</td>
+      <td class="mono" style="font-size:11px">${f.fFact?fmtDate(f.fFact):'—'}</td>
+      <td class="mono" style="font-size:11px;color:var(--fg3)">${fPromStr}</td>
+      <td class="mono" style="font-size:11px">${pend?'<span style="color:var(--warn);font-size:11px">Pendiente</span>':f.esMT?'—':fmtDate(f.fEntr)}</td>
+      <td><span class="dias-badge ${dcls}">${dhStr}${f.dh!==null&&!f.esMT?' d':''}</span></td>
+      <td><span class="chip ${f.est.c}">${f.est.t}</span></td>
+      <td class="bono-cell ${f.bono.cls}" style="font-size:11px">${f.bono.label}</td>
+      <td class="mono" style="font-size:11px;color:${bonoA>0?'var(--ok)':bonoA<0?'var(--danger)':'var(--fg3)'}">${bonoALabel}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--fg3)">Sin resultados para los filtros aplicados.</td></tr>`;
+
+  // Info + paginación
+  const info = document.getElementById('jfact-pag-info');
+  if (info) info.textContent = total===0 ? '' : `Mostrando ${desde+1}–${Math.min(desde+JFACT_SIZE,total)} de ${total}`;
+
+  const cont = document.getElementById('jfact-pag-btns');
+  if (!cont) return;
+  const bs = (active,disabled) =>
+    `style="padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;border:1.5px solid ${active?'var(--accent)':'var(--border)'};background:${active?'var(--accent)':'var(--surface)'};color:${active?'#fff':'var(--fg2)'};cursor:${disabled?'default':'pointer'};opacity:${disabled?.4:1}"`;
+
+  let html = `<button ${bs(false,jfactPag<=1)} onclick="jfactIrPag(${jfactPag-1})" ${jfactPag<=1?'disabled':''}>‹ Ant.</button>`;
+  const win=2, pages=new Set([1,totPags]);
+  for(let p=Math.max(1,jfactPag-win);p<=Math.min(totPags,jfactPag+win);p++) pages.add(p);
+  let last=0;
+  [...pages].sort((a,b)=>a-b).forEach(p=>{
+    if(last&&p-last>1) html+=`<span style="padding:5px 4px;font-size:12px;color:var(--fg3)">…</span>`;
+    html+=`<button ${bs(p===jfactPag,false)} onclick="jfactIrPag(${p})">${p}</button>`;
+    last=p;
+  });
+  html+=`<button ${bs(false,jfactPag>=totPags)} onclick="jfactIrPag(${jfactPag+1})" ${jfactPag>=totPags?'disabled':''}>Sig. ›</button>`;
+  cont.innerHTML = html;
+}
+
+/* ── BUSCADOR RÁPIDO CONDUCTOR ──────────────────────── */
+const COND_COLORS = { ROA:'#1D4ED8', MARTINEZ:'#7C3AED', MARIN:'#059669', MENDOZA:'#D97706', NIÑO:'#DC2626' };
+
+function condQuickSearch() {
+  const q   = (document.getElementById('cond-quick-search')?.value||'').toLowerCase().trim();
+  const dd  = document.getElementById('cond-dropdown');
+  if (!dd) return;
+  if (!q) { dd.hidden = true; return; }
+
+  const matches = Object.entries(CONDUCTORES).filter(([k,c]) =>
+    k.toLowerCase().includes(q) || (c.nombre||'').toLowerCase().includes(q) || (c.short||'').toLowerCase().includes(q)
+  );
+
+  if (!matches.length) {
+    dd.hidden = false;
+    dd.innerHTML = `<div style="padding:10px 14px;font-size:13px;color:var(--fg3)">Sin resultados</div>`;
+    return;
+  }
+
+  dd.hidden = false;
+  dd.innerHTML = matches.map(([k,c]) => {
+    const col = COND_COLORS[k]||'var(--fg2)';
+    const p   = Math.round(c.aTime/c.pedidos*100);
+    return `<div onclick="selCondQuick('${k}')"
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s"
+      onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <span style="width:32px;height:32px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0">${k.slice(0,2)}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--fg)">${c.nombre||c.short}</div>
+        <div style="font-size:11px;color:var(--fg3)">${c.placa} · ${c.pedidos} pedidos · ${p}% cumplimiento</div>
+      </div>
+      <span style="font-size:11px;font-weight:700;color:${c.bonoC>=0?'var(--ok)':'var(--danger)'}">${c.bonoC>=0?'+':'-'}$${Math.abs(c.bonoC).toLocaleString('es-CO')}</span>
+    </div>`;
+  }).join('');
+}
+
+function selCondQuick(key) {
+  const dd = document.getElementById('cond-dropdown');
+  if (dd) dd.hidden = true;
+  const inp = document.getElementById('cond-quick-search');
+  if (inp) inp.value = '';
+
+  // Activa la pill correspondiente y filtra
+  const pills = document.querySelectorAll('#jfact-cond-pills .cond-pill');
+  let targetBtn = null;
+  pills.forEach(b => { if (b.dataset.key === key) targetBtn = b; });
+  jfactSelCond(key, targetBtn);
+
+  // Muestra tarjeta resumen expandida
+  const c   = CONDUCTORES[key];
+  const col = COND_COLORS[key]||'var(--fg2)';
+  const p   = Math.round(c.aTime/c.pedidos*100);
+  const facs = (FACTURAS[key]||[]);
+  const real = facs.filter(f=>!f.esMT);
+  const entr = real.filter(f=>f.fEntr);
+  const atm  = entr.filter(f=>{ const dh=diasHabiles(f.fFact,f.fEntr); return dh!==null&&dh<=5; });
+  const pend = real.filter(f=>!f.fEntr);
+  const nts  = facs.filter(f=>f.esMT);
+
+  const el = document.getElementById('cond-quick-result');
+  if (!el) return;
+  el.hidden = false;
+  el.innerHTML = `
+    <div style="border:2px solid ${col};border-radius:var(--r-lg);overflow:hidden">
+      <div style="background:${col};padding:12px 18px;display:flex;align-items:center;gap:12px">
+        <span style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff">${key.slice(0,2)}</span>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#fff">${c.nombre||c.short}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.7)">${c.placa} · Jefatura de Logística INVESAKK</div>
+        </div>
+        <button onclick="document.getElementById('cond-quick-result').hidden=true"
+          style="margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">✕ Cerrar</button>
+      </div>
+      <div style="padding:14px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;background:var(--surface)">
+        <div style="text-align:center;padding:10px;background:var(--bg);border-radius:var(--r)">
+          <div style="font-size:22px;font-weight:800">${real.length}</div>
+          <div style="font-size:10px;color:var(--fg3);text-transform:uppercase;letter-spacing:.4px">Pedidos</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:var(--ok-s);border-radius:var(--r)">
+          <div style="font-size:22px;font-weight:800;color:var(--ok)">${atm.length}</div>
+          <div style="font-size:10px;color:var(--ok);text-transform:uppercase;letter-spacing:.4px">A tiempo</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:var(--warn-s);border-radius:var(--r)">
+          <div style="font-size:22px;font-weight:800;color:var(--warn)">${pend.length}</div>
+          <div style="font-size:10px;color:var(--warn);text-transform:uppercase;letter-spacing:.4px">Pendientes</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:var(--bg);border-radius:var(--r)">
+          <div style="font-size:22px;font-weight:800;color:var(--fg3)">${nts.length}</div>
+          <div style="font-size:10px;color:var(--fg3);text-transform:uppercase;letter-spacing:.4px">NT</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:${c.bonoC>=0?'var(--ok-s)':'var(--danger-s)'};border-radius:var(--r)">
+          <div style="font-size:18px;font-weight:800;color:${c.bonoC>=0?'var(--ok)':'var(--danger)'}">${c.bonoC>=0?'+':'-'}$${Math.abs(c.bonoC).toLocaleString('es-CO')}</div>
+          <div style="font-size:10px;color:${c.bonoC>=0?'var(--ok)':'var(--danger)'};text-transform:uppercase;letter-spacing:.4px">Bono neto</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:var(--bg);border-radius:var(--r)">
+          <div style="font-size:22px;font-weight:800;color:${p>=85?'var(--ok)':p>=40?'var(--warn)':'var(--danger)'}">${p}%</div>
+          <div style="font-size:10px;color:var(--fg3);text-transform:uppercase;letter-spacing:.4px">Cumplimiento</div>
+        </div>
+      </div>
+      <div style="padding:8px 18px 14px;background:var(--surface);border-top:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--fg3);margin-bottom:6px">Progreso hacia meta 85%</div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${Math.min(p,100)}%;background:${p>=85?'var(--ok)':p>=40?'var(--warn)':'var(--danger)'}"></div></div>
+        <div class="prog-label"><span>0%</span><span style="color:var(--fg3)">Meta: 85%</span><span>100%</span></div>
+      </div>
+    </div>
+  `;
+
+  // scroll a la tabla
+  setTimeout(()=> document.querySelector('#page-facturas-jefe .tbl-wrap')?.scrollIntoView({behavior:'smooth',block:'nearest'}), 200);
+}
+
+// Cierra dropdown al hacer clic fuera
+document.addEventListener('click', e => {
+  if (!e.target.closest('#cond-quick-search') && !e.target.closest('#cond-dropdown')) {
+    const dd = document.getElementById('cond-dropdown');
+    if (dd) dd.hidden = true;
+  }
+});
+
+function jfactIrPag(p) {
+  const tot = Math.ceil(jfactFilt.length/JFACT_SIZE)||1;
+  jfactPag = Math.max(1, Math.min(p, tot));
+  jfactRenderPag();
+  document.querySelector('#page-facturas-jefe .tbl-wrap')?.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ── ADMIN ──────────────────────────────────────────── */
+function adminTab(name, btn) {
+  document.querySelectorAll('.upload-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.upload-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function dzOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('drag-over'); }
+function dzLeave(id)   { document.getElementById(id).classList.remove('drag-over'); }
+function dzDrop(e, type) {
+  e.preventDefault();
+  dzLeave('dz-'+type);
+  const file = e.dataTransfer.files[0];
+  if (file) parseXlsx(file, type);
+}
+function xlsxLoad(e, type) {
+  const file = e.target.files[0];
+  if (file) parseXlsx(file, type);
+  e.target.value = '';
+}
+
+function parseXlsx(file, type) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type:'array', cellDates:true });
+      const sheetMap = { facturas:'Facturas', conductores:'Conductores', gps:'GPS', bodegas:'Bodegas' };
+      const sheetName = sheetMap[type];
+      const ws = wb.Sheets[sheetName] || wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
+      if (!rows.length) { showPreview(type, null, '⚠️ El archivo no tiene datos o la hoja no se llama "'+sheetName+'".'); return; }
+      showPreview(type, rows, null);
+    } catch(err) {
+      showPreview(type, null, '❌ Error al leer el archivo: '+err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// normaliza nombre de columna
+const nc = s => String(s||'').trim().toLowerCase().replace(/\s+/g,'');
+
+function showPreview(type, rows, errMsg) {
+  const el = document.getElementById('prev-'+type);
+  if (!rows) {
+    el.innerHTML = `<div class="upload-status error">⚠️ ${errMsg}</div>`;
+    return;
+  }
+
+  // Validar columnas mínimas
+  const keys = Object.keys(rows[0]).map(nc);
+  // Para facturas acepta formato SQL (numero/nombre/placa) O formato clásico (factura/conductor)
+  const reqFacturas = keys.some(k=>k.includes('numero')||k.includes('nombre'))
+    ? ['numero','nombre']   // columnas SQL
+    : ['factura','conductor'];  // columnas clásicas
+  const required = {
+    facturas:    reqFacturas,
+    conductores: ['clave','nombre','placa','pedidos','atiempo'],
+    gps:         ['placa','conductor','excesvel','acelbrusca','frenadobrusco'],
+    bodegas:     ['sede','pedidos','nt'],
+  };
+  const missing = (required[type]||[]).filter(r => !keys.some(k=>k.includes(r.slice(0,5))));
+  if (missing.length) {
+    el.innerHTML = `<div class="upload-status error">❌ Faltan columnas: <strong>${missing.join(', ')}</strong></div>`;
+    return;
+  }
+
+  const previewRows = rows.slice(0,5);
+  const cols = Object.keys(rows[0]);
+  const tableHtml = `
+    <div style="overflow-x:auto;max-height:200px;border:1px solid var(--border);border-radius:var(--r)">
+      <table style="min-width:500px">
+        <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${previewRows.map(r=>`<tr>${cols.map(c=>`<td style="font-size:12px;white-space:nowrap">${r[c]??''}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>
+    </div>
+    ${rows.length>5?`<div style="font-size:11px;color:var(--fg3);margin-top:6px">… y ${rows.length-5} filas más</div>`:''}
+  `;
+
+  el.innerHTML = `
+    <div class="upload-status ok">✅ Archivo leído correctamente · <strong>${rows.length}</strong> filas detectadas</div>
+    <div class="preview-area">
+      <h4>Vista previa (primeras 5 filas)</h4>
+      ${tableHtml}
+    </div>
+    <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px">
+      <button class="btn-apply" onclick="aplicarDatos('${type}', uploadParsed['${type}'])">✔ Aplicar datos</button>
+      <button class="btn-clear" onclick="limpiarPreview('${type}')">✕ Cancelar</button>
+    </div>
+  `;
+
+  if (!window.uploadParsed) window.uploadParsed = {};
+  window.uploadParsed[type] = rows;
+}
+
+function limpiarPreview(type) {
+  document.getElementById('prev-'+type).innerHTML = '';
+  if (window.uploadParsed) delete window.uploadParsed[type];
+}
+
+function addLog(msg, cls='ok') {
+  const ul = document.getElementById('upload-log');
+  if (ul.querySelector('li[style]')) ul.innerHTML = '';
+  const li = document.createElement('li');
+  li.className = cls;
+  li.textContent = new Date().toLocaleTimeString('es-CO') + ' · ' + msg;
+  ul.prepend(li);
+}
+
+function fmtExcel(v) {
+  if (!v) return null;
+  if (v instanceof Date) {
+    const y = v.getFullYear(), m = String(v.getMonth()+1).padStart(2,'0'), d = String(v.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  const s = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // intenta número de serie Excel
+  const n = Number(s);
+  if (!isNaN(n) && n > 40000) {
+    const d = new Date(Math.round((n - 25569) * 86400000));
+    return d.toISOString().slice(0,10);
+  }
+  return s || null;
+}
+
+function aplicarDatos(type, rows) {
+  if (!rows||!rows.length) return;
+  const col = (row, ...names) => {
+    for (const n of names) {
+      const k = Object.keys(row).find(k => nc(k).includes(n));
+      if (k !== undefined) return row[k];
+    }
+    return '';
+  };
+
+  if (type === 'facturas') {
+    const nuevo = {};
+    // Mapa de placa → clave de conductor para lookup por vehículo
+    const placaMap = {};
+    Object.entries(CONDUCTORES).forEach(([k,v]) => { if (v.placa) placaMap[v.placa.toUpperCase()] = k; });
+
+    rows.forEach(r => {
+      // Buscar conductor: primero por columna 'conductor', luego 'nombre' (SQL), luego por placa
+      let condRaw = String(col(r,'conductor')||'').trim().toUpperCase();
+      if (!condRaw) condRaw = String(col(r,'nombre')||'').trim().toUpperCase();
+      const placaRaw = String(col(r,'placa')||'').trim().toUpperCase();
+
+      // Buscar clave exacta, luego por prefijo, luego por nombre que contiene la clave, luego por placa
+      let key = Object.keys(CONDUCTORES).find(k => condRaw === k);
+      if (!key) key = Object.keys(CONDUCTORES).find(k => condRaw.startsWith(k));
+      if (!key) key = Object.keys(CONDUCTORES).find(k => condRaw.includes(k));
+      if (!key && placaRaw) key = placaMap[placaRaw];
+      if (!key) return; // conductor no encontrado, ignorar fila
+
+      if (!nuevo[key]) nuevo[key] = [];
+
+      // Tipo de documento — SQL: columna 'tipo'
+      const tipo    = String(col(r,'tipo')||'').trim().toUpperCase();
+      const tipDesc = String(col(r,'descripcion')||'').trim();
+      // esMT: columna EsNT (formato antiguo) O tipo que empieza por NT (SQL)
+      const esNTcol = /^si$/i.test(String(col(r,'esnt','nt')||'').trim());
+      const esMT    = esNTcol || tipoEsMT(tipo);
+
+      // Fechas — soporta columnas SQL (fec_factura, fec_promesa_entrega, fec_entrega_logistica)
+      //          y columnas antiguas (fechafactura, fechaentrega)
+      const fFact    = fmtExcel(col(r,'fecfactura','fec_factura','fechafactura','fecha_factura','ffact'));
+      const fPromesa = fmtExcel(col(r,'fecpromesaentrega','fec_promesa_entrega','fechapromesa','fpromesa'));
+      const fEntr    = fmtExcel(col(r,'fecentreganegocio','fec_entrega_logistica','fechaentrega','fecha_entrega','fentr')) || null;
+
+      // Diferencia en días — columna SQL directa; si no viene, se calculará en getDias()
+      const difDiasRaw  = col(r,'diferenciafechadias','diferencia_fecha_dias','differencedias','difDias');
+      const difHorasRaw = col(r,'diferenciafechahoras','diferencia_fecha_horas','difHoras');
+      const difDias  = (difDiasRaw  !== '' && difDiasRaw  !== undefined && difDiasRaw  !== null) ? Number(difDiasRaw)  : undefined;
+      const difHoras = (difHorasRaw !== '' && difHorasRaw !== undefined && difHorasRaw !== null) ? Number(difHorasRaw) : undefined;
+
+      // Valor y peso — columnas SQL
+      const valor = Number(col(r,'total_trans','valortotal','valor_total','valor')||0) || undefined;
+      const peso  = Number(col(r,'peso_total','pesototal','peso')||0) || undefined;
+
+      nuevo[key].push({
+        num:      String(col(r,'numero','factura','num','número')||'—'),
+        tipo,
+        tipDesc,
+        cliente:  String(col(r,'nombres','cliente')||''),
+        ciudad:   String(col(r,'ciudad')||''),
+        dpto:     String(col(r,'dpto','departamento')||''),
+        placa:    placaRaw,
+        valor,
+        peso,
+        fFact,
+        fPromesa,
+        fEntr,
+        difDias,
+        difHoras,
+        esMT,
+      });
+    });
+    Object.assign(FACTURAS, nuevo);
+    const total = Object.values(nuevo).reduce((s,a)=>s+a.length,0);
+    addLog(`Facturas actualizadas: ${total} registros en ${Object.keys(nuevo).length} conductores.`);
+  }
+
+  else if (type === 'conductores') {
+    rows.forEach(r => {
+      const key = String(col(r,'clave')||'').trim().toUpperCase();
+      if (!key) return;
+      CONDUCTORES[key] = {
+        nombre: String(col(r,'nombre')||key),
+        short:  key.slice(0,5),
+        placa:  String(col(r,'placa')||''),
+        pedidos:Number(col(r,'pedidos')||0),
+        aTime:  Number(col(r,'atiempo','a_tiempo')||0),
+        h24:    Number(col(r,'h24')||0),
+        d2:     Number(col(r,'d2')||0),
+        bonoC:  Number(col(r,'bonoc','bono_c')||0),
+        bonoA:  Number(col(r,'bonoa','bono_a')||0),
+        metaC:  Number(col(r,'metac','meta_c')||0),
+        metaA:  Number(col(r,'metaa','meta_a')||0),
+        metaH24:Number(col(r,'metah24')||0),
+      };
+    });
+    addLog(`Conductores actualizados: ${rows.length} registros.`);
+    buildProgConductores();
+    buildTbEquipo();
+    buildTbMeta();
+  }
+
+  else if (type === 'gps') {
+    GPS.length = 0;
+    rows.forEach(r => {
+      GPS.push({
+        placa:     String(col(r,'placa')||''),
+        conductor: String(col(r,'conductor')||'—'),
+        vel:       Number(col(r,'excesvel','exceso')||0),
+        acc:       Number(col(r,'acelbrusca','aceleracion')||0),
+        brk:       Number(col(r,'frenadobrusco','frenado')||0),
+      });
+    });
+    addLog(`GPS actualizado: ${rows.length} vehículos.`);
+    buildTbGps();
+  }
+
+  else if (type === 'bodegas') {
+    BODEGAS.length = 0;
+    rows.forEach(r => {
+      BODEGAS.push({
+        sede: String(col(r,'sede')||''),
+        ped:  Number(col(r,'pedidos')||0),
+        nt:   Number(col(r,'nt')||0),
+      });
+    });
+    addLog(`Pendientes por bodega actualizados: ${rows.length} sedes.`);
+    buildTbPendientes();
+  }
+
+  limpiarPreview(type);
+
+  if (session.role === 'jefe' || session.role === 'admin') buildJefaturaFacturas();
+  if (session.cond) {
+    buildComplianceMetrics(session.cond);
+    buildDailyChart(session.cond);
+    buildFacturas(session.cond);
+    buildCondPanel(session.cond);
+    buildAyudPanel(session.cond);
+  }
+}
+
+/* ── INIT ──────────────────────────────────────────── */
+if (cargarSesion()) {
+  iniciarApp();
+}
+</script>
+</body>
+</html>
