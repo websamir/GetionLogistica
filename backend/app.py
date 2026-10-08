@@ -25,10 +25,11 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=10)
 app.config['MAX_CONTENT_LENGTH']       = 32 * 1024 * 1024  # 32 MB
 
 CORS(app, resources={r"/api/*": {"origins": [
-    "http://localhost:*",
-    "https://*.vercel.app",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "https://getionlogistica-frontend.vercel.app",
     "https://getionlogistica.onrender.com",
-]}})
+]}}, supports_credentials=False)
 jwt = JWTManager(app)
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
