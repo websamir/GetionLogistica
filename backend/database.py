@@ -6,7 +6,7 @@ Soporta dos motores:
   - PostgreSQL (Supabase) cuando DATABASE_URL está definida  ← producción
   - SQLite                                                   ← desarrollo local
 """
-import os, hashlib, re
+import os, hashlib, re, datetime
 from pathlib import Path
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")  # ej: postgresql://...
@@ -46,10 +46,16 @@ def p():
     return "%s" if USING_PG else "?"
 
 
+def _fix_dates(d):
+    """Convierte datetime.date/datetime a string ISO YYYY-MM-DD."""
+    return {
+        k: v.isoformat()[:10] if isinstance(v, (datetime.date, datetime.datetime)) else v
+        for k, v in d.items()
+    }
+
+
 def rows_to_dicts(rows):
-    if USING_PG:
-        return [dict(r) for r in rows]
-    return [dict(r) for r in rows]
+    return [_fix_dates(dict(r)) for r in rows]
 
 
 def fetchall(conn, sql, params=()):
@@ -58,7 +64,7 @@ def fetchall(conn, sql, params=()):
     if USING_PG:
         with conn.cursor() as cur:
             cur.execute(sql, params)
-            return [dict(r) for r in cur.fetchall()]
+            return [_fix_dates(dict(r)) for r in cur.fetchall()]
     else:
         return [dict(r) for r in conn.execute(sql, params).fetchall()]
 
@@ -70,7 +76,7 @@ def fetchone(conn, sql, params=()):
         with conn.cursor() as cur:
             cur.execute(sql, params)
             r = cur.fetchone()
-            return dict(r) if r else None
+            return _fix_dates(dict(r)) if r else None
     else:
         r = conn.execute(sql, params).fetchone()
         return dict(r) if r else None
