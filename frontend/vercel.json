@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "buildCommand": "node build.js",
+  "outputDirectory": "dist",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "build": {
+    "env": {
+      "API_BASE_URL": "https://getionlogistica.onrender.com"
+    }
+  }
+}
