@@ -368,20 +368,23 @@ def replace_facturas(cond_keys, rows_data):
     if cond_keys:
         placeholders = ', '.join([p()] * len(cond_keys))
         execute(conn, f"DELETE FROM facturas WHERE cond_key IN ({placeholders})", cond_keys)
-    for r in rows_data:
-        execute(conn, f"""
-            INSERT INTO facturas
-              (cond_key,num,tipo,tip_desc,cliente,ciudad,dpto,placa,valor,peso,
-               fec_fact,fec_promesa,fec_entr,dif_dias,dif_horas,es_mt)
-            VALUES ({ph(16)})
-        """, (
+    param_list = [
+        (
             r['cond_key'], r.get('num',''), r.get('tipo',''), r.get('tip_desc',''),
             r.get('cliente',''), r.get('ciudad',''), r.get('dpto',''), r.get('placa',''),
             r.get('valor'), r.get('peso'),
             r.get('fec_fact'), r.get('fec_promesa'), r.get('fec_entr'),
             r.get('dif_dias'), r.get('dif_horas'),
             1 if r.get('es_mt') else 0,
-        ))
+        )
+        for r in rows_data
+    ]
+    executemany(conn, f"""
+        INSERT INTO facturas
+          (cond_key,num,tipo,tip_desc,cliente,ciudad,dpto,placa,valor,peso,
+           fec_fact,fec_promesa,fec_entr,dif_dias,dif_horas,es_mt)
+        VALUES ({ph(16)})
+    """, param_list)
     commit(conn)
     close(conn)
 
