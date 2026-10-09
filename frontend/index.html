@@ -1211,8 +1211,11 @@ function renderResumen() {
     const W = 600, H = 160, padL = 32, padR = 12, padT = 22, padB = 36;
     const chartW = W - padL - padR, chartH = H - padT - padB;
     const data = conductores.map(c => {
-      const s = getCondStats(c.clave);
-      return { label: c.short || c.clave, total: s.pedidos || 0, ok: s.a_tiempo || 0, color: COND_COLORS[c.clave] || '#64748B' };
+      const s  = getCondStats(c.clave);
+      const rs = stats[c.clave] || {};
+      const total = rs.pedidos   || s.pedidos   || 0;
+      const ok    = rs.a_tiempo  || 0;  // conteo real, no porcentaje
+      return { label: c.short || c.clave, total, ok: Math.min(ok, total), color: COND_COLORS[c.clave] || '#64748B' };
     });
     const maxVal = Math.max(...data.map(d => d.total), 1);
     const slotW  = chartW / data.length;
