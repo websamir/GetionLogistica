@@ -1168,16 +1168,31 @@ function renderResumen() {
       })()}
     </div>
 
-    <!-- Gráfica Total vs A tiempo por conductor -->
-    <div class="chart-wrap" style="margin-bottom:20px">
-      <div class="chart-label">Total vs A tiempo — Por conductor</div>
-      <div id="res-cond-bar-chart"></div>
+    <!-- Desempeño por conductor + Cumplimiento -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div class="chart-wrap">
+        <div class="chart-label">Desempeño por conductor</div>
+        <div style="font-size:11px;color:var(--fg2);margin-bottom:8px">Pedidos y tasa de cumplimiento</div>
+        <div id="res-cond-bar-chart"></div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-label">Cumplimiento</div>
+        <div style="font-size:11px;color:var(--fg2);margin-bottom:12px">% entregas a tiempo por conductor</div>
+        <div id="res-cumplimiento"></div>
+      </div>
     </div>
 
     <!-- Gráfica entregas por día -->
     <div class="chart-wrap" style="margin-bottom:20px">
       <div class="chart-label">Cantidad de entregas por día — Equipo completo</div>
       <div id="res-daily-chart"></div>
+    </div>
+
+    <!-- Top destinos -->
+    <div class="chart-wrap" style="margin-bottom:20px">
+      <div class="chart-label">Top destinos — ${mesActivo}</div>
+      <div style="font-size:11px;color:var(--fg2);margin-bottom:12px">Ciudades con más entregas</div>
+      <div id="res-top-destinos"></div>
     </div>
 
     <!-- Categorías globales -->
@@ -1221,8 +1236,70 @@ function renderResumen() {
     el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">${legend}${bars}</svg>`;
   })();
 
+  // Cumplimiento por conductor (barras de progreso)
+  (function() {
+    const el = document.getElementById('res-cumplimiento');
+    if (!el) return;
+    const rows = conductores.map(c => {
+      const s = getCondStats(c.clave);
+      const pct = stats[c.clave]?.pct_tiempo ?? 0;
+      const ent = s.entregadas || 0;
+      const ok  = s.a_tiempo  || 0;
+      const color = pct >= 85 ? '#059669' : pct >= 55 ? '#F59E0B' : '#EF4444';
+      return `<div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+          <span style="font-weight:700;color:${COND_COLORS[c.clave]||'var(--fg)'}">${c.short || c.clave}</span>
+          <span style="font-weight:800;color:${color};font-size:15px">${pct}%</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:8px;overflow:hidden">
+          <div style="width:${Math.min(100,pct)}%;height:100%;background:${color};border-radius:4px;transition:width .4s"></div>
+        </div>
+        <div style="font-size:10px;color:var(--fg2);margin-top:3px">${ok} de ${ent} a tiempo</div>
+      </div>`;
+    }).join('');
+    el.innerHTML = rows || '<p style="color:var(--fg2);font-size:12px">Sin datos</p>';
+  })();
+
   // Gráfica diaria global
   renderDailyChart(facturas, '#64748B', 'res-daily-chart');
+
+  // Top destinos
+  (function() {
+    const el = document.getElementById('res-top-destinos');
+    if (!el) return;
+    const count = {};
+    facturas.forEach(f => {
+      if (!f.ciudad) return;
+      const c = f.ciudad.trim();
+      count[c] = (count[c] || 0) + 1;
+    });
+    const total = facturas.length || 1;
+    const sorted = Object.entries(count).sort((a,b) => b[1]-a[1]).slice(0, 8);
+    const maxVal = sorted[0]?.[1] || 1;
+    const rows = sorted.map(([ciudad, n]) => {
+      const pct = Math.round(n / total * 100);
+      return `<tr>
+        <td style="font-weight:600;padding:8px 12px">${ciudad}</td>
+        <td style="text-align:right;font-weight:700;padding:8px 12px">${n}</td>
+        <td style="padding:8px 12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;background:var(--border);border-radius:4px;height:8px;overflow:hidden">
+              <div style="width:${Math.round(n/maxVal*100)}%;height:100%;background:var(--accent);border-radius:4px"></div>
+            </div>
+            <span style="font-weight:700;color:var(--accent);min-width:34px;text-align:right">${pct}%</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr>
+        <th style="text-align:left;padding:5px 12px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Ciudad</th>
+        <th style="text-align:right;padding:5px 12px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Entregas</th>
+        <th style="text-align:left;padding:5px 12px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Participación</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  })();
 
   // Renderizar categorías globales usando todas las facturas
   renderStackChartEl(facturas, document.getElementById('res-stack-chart'));
