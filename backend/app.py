@@ -151,9 +151,9 @@ def get_stats():
 
     if mes:
         if db.USING_PG:
-            mes_filter = "AND to_char(fec_entr,'YYYY-MM') = %s"
+            mes_filter = "AND to_char(fec_fact,'YYYY-MM') = %s"
         else:
-            mes_filter = "AND fec_entr LIKE ?"
+            mes_filter = "AND fec_fact LIKE ?"
             mes = mes + '%'
         params = [mes]
     else:
