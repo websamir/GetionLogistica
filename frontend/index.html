@@ -1189,34 +1189,36 @@ function renderResumen() {
     <div class="conductor-grid" id="res-cards"></div>
   `;
 
-  // Gráfica Total vs A tiempo por conductor
+  // Gráfica Total vs A tiempo por conductor (barras lado a lado)
   (function() {
     const el = document.getElementById('res-cond-bar-chart');
     if (!el || !conductores.length) return;
-    const W = 800, H = 220, padL = 36, padR = 16, padT = 28, padB = 44;
+    const W = 600, H = 160, padL = 32, padR = 12, padT = 22, padB = 36;
     const chartW = W - padL - padR, chartH = H - padT - padB;
     const data = conductores.map(c => {
       const s = getCondStats(c.clave);
       return { label: c.short || c.clave, total: s.pedidos || 0, ok: s.a_tiempo || 0, color: COND_COLORS[c.clave] || '#64748B' };
     });
     const maxVal = Math.max(...data.map(d => d.total), 1);
-    const slotW = chartW / data.length;
-    const barW = Math.max(18, Math.min(48, slotW * 0.6));
-    const yBase = padT + chartH;
-    const legend = `<text x="${padL}" y="12" font-size="10" fill="#64748B">■ <tspan fill="#1e3a5f">Total</tspan>  ■ <tspan fill="#10B981">A tiempo</tspan></text>`;
+    const slotW  = chartW / data.length;
+    const gap    = 2;
+    const barW   = Math.max(10, Math.min(32, (slotW - gap * 3) / 2));
+    const yBase  = padT + chartH;
+    const legend = `<text x="${padL}" y="12" font-size="9" fill="#64748B">■ <tspan fill="#1e3a5f">Total</tspan>   ■ <tspan fill="#10B981">A tiempo</tspan></text>`;
     const bars = data.map((d, i) => {
-      const cx = padL + i * slotW + slotW / 2;
-      const totalH = Math.max(2, Math.round((d.total / maxVal) * chartH));
-      const okH    = Math.round((d.ok    / maxVal) * chartH);
-      const totalY = yBase - totalH;
-      const okY    = yBase - okH;
+      const slotX = padL + i * slotW + slotW / 2;
+      const x1 = slotX - gap / 2 - barW;  // barra Total (izquierda)
+      const x2 = slotX + gap / 2;          // barra A tiempo (derecha)
+      const tH  = Math.max(2, Math.round((d.total / maxVal) * chartH));
+      const oH  = Math.max(d.ok > 0 ? 2 : 0, Math.round((d.ok / maxVal) * chartH));
       return `
-        <rect x="${(cx - barW/2).toFixed(1)}" y="${totalY}" width="${barW}" height="${totalH}" fill="#1e3a5f" rx="3"/>
-        <rect x="${(cx - barW/2).toFixed(1)}" y="${okY}" width="${barW}" height="${okH}" fill="#10B981" rx="3"/>
-        <text x="${cx}" y="${totalY - 4}" text-anchor="middle" font-size="10" fill="var(--fg2)">${d.total}</text>
-        <text x="${cx}" y="${yBase + 14}" text-anchor="middle" font-size="10" fill="var(--fg2)">${d.label}</text>`;
+        <rect x="${x1.toFixed(1)}" y="${yBase - tH}" width="${barW}" height="${tH}" fill="#1e3a5f" rx="2"/>
+        <text x="${(x1 + barW/2).toFixed(1)}" y="${yBase - tH - 3}" text-anchor="middle" font-size="9" fill="var(--fg2)">${d.total}</text>
+        <rect x="${x2.toFixed(1)}" y="${yBase - oH}" width="${barW}" height="${oH}" fill="#10B981" rx="2"/>
+        <text x="${(x2 + barW/2).toFixed(1)}" y="${yBase - oH - 3}" text-anchor="middle" font-size="9" fill="#10B981">${d.ok}</text>
+        <text x="${slotX}" y="${yBase + 14}" text-anchor="middle" font-size="10" fill="var(--fg2)">${d.label}</text>`;
     }).join('');
-    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${legend}${bars}</svg>`;
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">${legend}${bars}</svg>`;
   })();
 
   // Gráfica diaria global
@@ -1592,7 +1594,7 @@ function renderDailyChart(facts, color, elId = 'daily-chart') {
   const days = Object.keys(byDay).sort();
   if (!days.length) { el.innerHTML = '<p style="color:var(--fg2);font-size:12px">Sin entregas.</p>'; return; }
 
-  const W = 800, H = 200, padL = 32, padR = 16, padT = 22, padB = 40;
+  const W = 700, H = 160, padL = 32, padR = 12, padT = 20, padB = 36;
   const chartW = W - padL - padR;
   const chartH = H - padT - padB;
   const maxVal = Math.max(...days.map(d => byDay[d].total), 1);
