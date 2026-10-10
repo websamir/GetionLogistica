@@ -171,6 +171,7 @@ def get_stats():
             SUM(CASE WHEN fec_entr IS NOT NULL AND es_mt = 0 AND dif_dias <= 5 THEN 1 ELSE 0 END) AS a_tiempo,
             SUM(CASE WHEN fec_entr IS NOT NULL AND es_mt = 0 AND dif_dias <= 1 THEN 1 ELSE 0 END) AS h24,
             SUM(CASE WHEN fec_entr IS NOT NULL AND es_mt = 0 AND dif_dias <= 2 THEN 1 ELSE 0 END) AS d2,
+            SUM(CASE WHEN es_mt = 0 THEN COALESCE(peso, 0) ELSE 0 END) AS peso_total,
             SUM({bono_sql}) AS bono_c,
             SUM({bono_sql}) / 2.0 AS bono_a
         FROM facturas
@@ -196,6 +197,7 @@ def get_stats():
             'pct_tiempo':     pct_tiempo,
             'h24':            r['h24'],
             'd2':             r['d2'],
+            'peso_total':     round(float(r['peso_total'] or 0), 1),
             'bono_c':         round(r['bono_c'] or 0),
             'bono_a':         round(r['bono_a'] or 0),
         }
