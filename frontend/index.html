@@ -1169,6 +1169,47 @@ function renderResumen() {
           </tbody>
         </table>`;
       })()}
+
+      <!-- Tabla auxiliares -->
+      <div style="font-size:13px;font-weight:800;letter-spacing:.04em;color:var(--fg);margin:20px 0 8px;text-transform:uppercase;border-bottom:2px solid var(--border);padding-bottom:6px">Bonificación Auxiliares</div>
+      ${(() => {
+        const th = (t,r='right') => `<th style="text-align:${r};padding:5px 8px;color:var(--fg2);font-weight:600">${t}</th>`;
+        const td = (v,color='var(--fg)',bold=false,r='right') =>
+          `<td style="padding:6px 8px;text-align:${r};color:${color};font-weight:${bold?'700':'400'}">${v}</td>`;
+        let totalAyud = 0, totalExtra = 0;
+        const auxRows = conductores.map(c => {
+          const s   = stats[c.clave] || {};
+          const pct = s.pct_tiempo ?? 0;
+          const bonoAyud = Number(s.bono_a || 0);
+          const exA      = pct >= metaPct ? BONO_EXTRA_AYUD : 0;
+          const tot      = bonoAyud + exA;
+          totalAyud  += bonoAyud;
+          totalExtra += exA;
+          const clr = tot >= 0 ? '#059669' : '#DC2626';
+          const nombre = c.nombre ? c.nombre.replace(/^[^—]*—\s*/,'') : c.clave;
+          return `<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:6px 8px;font-weight:600;color:${COND_COLORS[c.clave]||'var(--fg)'}">Aux. ${c.short||c.clave} — ${nombre}</td>
+            ${td(fmtCurrency(bonoAyud), bonoAyud>=0?'#059669':'#DC2626', true)}
+            ${td(exA>0?'+'+fmtCurrency(exA):'—', exA>0?'#059669':'var(--fg2)', true)}
+            ${td(fmtCurrency(tot), clr, true)}
+          </tr>`;
+        }).join('');
+        const grandTotal = totalAyud + totalExtra;
+        return `<table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            ${th('Auxiliar','left')}${th('Bono Ayud.')}${th('Extra 85%')}${th('Total')}
+          </tr></thead>
+          <tbody>
+            ${auxRows}
+            <tr style="background:var(--surface);font-weight:800;border-top:2px solid var(--border)">
+              <td style="padding:7px 8px">TOTAL</td>
+              <td style="padding:7px 8px;text-align:right">${fmtCurrency(totalAyud)}</td>
+              <td style="padding:7px 8px;text-align:right">${fmtCurrency(totalExtra)}</td>
+              <td style="padding:7px 8px;text-align:right;color:${grandTotal>=0?'#059669':'#DC2626'}">${fmtCurrency(grandTotal)}</td>
+            </tr>
+          </tbody>
+        </table>`;
+      })()}
     </div>
 
     <!-- Desempeño por conductor + Cumplimiento -->
