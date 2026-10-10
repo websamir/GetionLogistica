@@ -1696,48 +1696,28 @@ function renderDailyChart(facts, color, elId = 'daily-chart') {
   const chartH = H - padT - padB;
   const maxVal = Math.max(...days.map(d => byDay[d].total), 1);
   const slotW = chartW / days.length;
-  const barW = Math.max(8, Math.min(28, slotW - 6));
+  const gap   = 2;
+  const barW  = Math.max(6, Math.min(18, (slotW - gap * 4) / 3));
   const yBase = padT + chartH;
 
   const bars = days.map((d, i) => {
-    const v = byDay[d];
-    const x = padL + i * slotW + (slotW - barW) / 2;
-    const totalH = Math.max(2, Math.round((v.total / maxVal) * chartH));
-    const okH    = Math.round((v.ok    / maxVal) * chartH);
-    const tardeH = totalH - okH;
-    const label  = 'día ' + d.slice(8);
-
-    // barra tarde (arriba de la pila = naranja)
-    const tardeY = (yBase - totalH).toFixed(1);
-    const rTarde = tardeH > 0
-      ? `<rect x="${x.toFixed(1)}" y="${tardeY}" width="${barW}" height="${tardeH.toFixed(1)}" fill="#EF4444" rx="3"/>`
-      : '';
-    // número dentro de la barra tarde
-    const tardeTxtY = (yBase - totalH + tardeH / 2 + 4).toFixed(1);
-    const tardeTxt = tardeH >= 14 && v.tarde > 0
-      ? `<text x="${(x + barW/2).toFixed(1)}" y="${tardeTxtY}" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">${v.tarde}</text>`
-      : '';
-
-    // barra a tiempo (abajo = verde)
-    const okY = (yBase - okH).toFixed(1);
-    const rOk = okH > 0
-      ? `<rect x="${x.toFixed(1)}" y="${okY}" width="${barW}" height="${okH.toFixed(1)}" fill="#059669" rx="3"/>`
-      : '';
-    // número dentro de la barra a tiempo
-    const okTxtY = (yBase - okH / 2 + 4).toFixed(1);
-    const okTxt = okH >= 14 && v.ok > 0
-      ? `<text x="${(x + barW/2).toFixed(1)}" y="${okTxtY}" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">${v.ok}</text>`
-      : '';
-
-    // total encima
-    const numY = (yBase - totalH - 5).toFixed(1);
-    const cx = (x + barW / 2).toFixed(1);
-    const lblY = (yBase + 13).toFixed(1);
-
+    const v   = byDay[d];
+    const cx  = padL + i * slotW + slotW / 2;
+    const x1  = cx - barW * 1.5 - gap;   // Total
+    const x2  = cx - barW / 2;           // A tiempo
+    const x3  = cx + barW / 2 + gap;     // Tarde
+    const tH  = Math.max(v.total > 0 ? 2 : 0, Math.round((v.total / maxVal) * chartH));
+    const oH  = Math.max(v.ok    > 0 ? 2 : 0, Math.round((v.ok    / maxVal) * chartH));
+    const rdH = Math.max(v.tarde > 0 ? 2 : 0, Math.round((v.tarde / maxVal) * chartH));
+    const label = 'día ' + d.slice(8);
     return `
-      ${rTarde}${tardeTxt}${rOk}${okTxt}
-      <text x="${cx}" y="${numY}" text-anchor="middle" font-size="10" fill="var(--fg)" font-weight="700">${v.total}</text>
-      <text x="${cx}" y="${lblY}" text-anchor="middle" font-size="8.5" fill="var(--fg2)">${label}</text>
+      <rect x="${x1.toFixed(1)}" y="${yBase-tH}"  width="${barW}" height="${tH}"  fill="#1e3a5f" rx="2"/>
+      <text x="${(x1+barW/2).toFixed(1)}" y="${yBase-tH-3}"  text-anchor="middle" font-size="9" fill="var(--fg2)">${v.total}</text>
+      <rect x="${x2.toFixed(1)}" y="${yBase-oH}"  width="${barW}" height="${oH}"  fill="#059669" rx="2"/>
+      <text x="${(x2+barW/2).toFixed(1)}" y="${yBase-oH-3}"  text-anchor="middle" font-size="9" fill="#059669">${v.ok}</text>
+      <rect x="${x3.toFixed(1)}" y="${yBase-rdH}" width="${barW}" height="${rdH}" fill="#EF4444" rx="2"/>
+      <text x="${(x3+barW/2).toFixed(1)}" y="${yBase-rdH-3}" text-anchor="middle" font-size="9" fill="#EF4444">${v.tarde}</text>
+      <text x="${cx}" y="${yBase+13}" text-anchor="middle" font-size="8.5" fill="var(--fg2)">${label}</text>
     `;
   }).join('');
 
@@ -1773,12 +1753,9 @@ function renderDailyChart(facts, color, elId = 'daily-chart') {
       ${bars}
     </svg>
     <div style="display:flex;gap:16px;font-size:11px;color:var(--fg2);margin-top:4px;padding-left:4px">
-      <span style="display:flex;align-items:center;gap:5px">
-        <span style="width:11px;height:11px;background:#059669;border-radius:3px;display:inline-block;flex-shrink:0"></span>A tiempo (≤5d)
-      </span>
-      <span style="display:flex;align-items:center;gap:5px">
-        <span style="width:11px;height:11px;background:#EF4444;border-radius:3px;display:inline-block;flex-shrink:0"></span>Tarde
-      </span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:11px;height:11px;background:#1e3a5f;border-radius:3px;display:inline-block;flex-shrink:0"></span>Total</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:11px;height:11px;background:#059669;border-radius:3px;display:inline-block;flex-shrink:0"></span>A tiempo (≤5d)</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:11px;height:11px;background:#EF4444;border-radius:3px;display:inline-block;flex-shrink:0"></span>Tarde</span>
     </div>
   `;
 }
