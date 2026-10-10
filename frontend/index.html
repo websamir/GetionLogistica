@@ -960,20 +960,19 @@ function calcBonoJefatura(totalEnt) {
 function renderResumen() {
   const el = document.getElementById('page-resumen');
   const allStats = conductores.map(c => getCondStats(c.clave));
+  const totalEnt   = allStats.reduce((s, c) => s + (c.entregadas || 0), 0);
+  const bj = calcBonoJefatura(totalEnt);
+  const metaPct = Math.round(BONO_JEFE_META * 100);
   const totalPed  = allStats.reduce((s, c) => s + (c.pedidos || 0), 0);
   const _bonoBase  = allStats.reduce((s, c) => s + (c.bono_c || 0) + (c.bono_a || 0), 0);
   const _extraCond = conductores.reduce((s,c)=>{ const pct=stats[c.clave]?.pct_tiempo??0; return s+(pct>=metaPct?BONO_EXTRA_COND:0); },0);
   const _extraAyud = conductores.reduce((s,c)=>{ const pct=stats[c.clave]?.pct_tiempo??0; return s+(pct>=metaPct?BONO_EXTRA_AYUD:0); },0);
   const _bonoJef   = bj.activado ? BONO_JEFE + BONO_AUX1 + BONO_AUX2 : 0;
   const totalBono  = _bonoBase + _extraCond + _extraAyud + _bonoJef;
-  const totalEnt   = allStats.reduce((s, c) => s + (c.entregadas || 0), 0);
   const totalPend  = allStats.reduce((s, c) => s + (c.pendientes || 0), 0);
   const totalATiempo = conductores.reduce((s, c) => s + (stats[c.clave]?.a_tiempo || 0), 0);
   const totalTarde   = totalEnt - totalATiempo;
   const totalPeso    = allStats.reduce((s, c) => s + (c.peso_total || 0), 0);
-
-  const bj = calcBonoJefatura(totalEnt);
-  const metaPct = Math.round(BONO_JEFE_META * 100);
   const faltaPct = Math.max(0, metaPct - bj.pct);
   const barColor = bj.pct >= 85 ? '#059669'
                  : bj.pct >= 70 ? '#22C55E'
