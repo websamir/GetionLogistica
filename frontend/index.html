@@ -1099,12 +1099,16 @@ function renderResumen() {
               ${typeof val==='number' ? fmtCurrency(val) : val}
             </div>
           </div>`;
-        return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">
+        const _aux1 = bj.activado ? BONO_AUX1 : 0;
+        const _aux2 = bj.activado ? BONO_AUX2 : 0;
+        return `<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:10px">
           ${card('Conductores', _bc)}
           ${card('Extra Cond. 85%', _exC > 0 ? _exC : '—')}
           ${card('Ayudantes', _ba)}
           ${card('Extra Ayud. 85%', _exA > 0 ? _exA : '—')}
-          ${card('Jefatura (si se activa)', bj.activado ? _jef : '—')}
+          ${card('Jefe Logística', bj.activado ? BONO_JEFE : '—')}
+          ${card('Aux. Jefatura 1', bj.activado ? _aux1 : '—')}
+          ${card('Aux. Jefatura 2', bj.activado ? _aux2 : '—')}
           ${card('TOTAL A PAGAR', _tot, true)}
         </div>`;
       })()}
