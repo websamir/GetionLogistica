@@ -1267,8 +1267,7 @@ function renderResumen() {
         <div style="background:var(--border);border-radius:4px;height:8px;overflow:hidden">
           <div style="width:${Math.min(100,pct)}%;height:100%;background:${color};border-radius:4px;transition:width .4s"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--fg2);margin-top:3px">
-          <span>${ok} de ${ent} a tiempo</span>
+        <div style="display:flex;justify-content:flex-end;font-size:10px;color:var(--fg2);margin-top:3px">
           <span style="color:#0369A1;font-weight:600">${(s.peso_total||0).toLocaleString('es-CO')} kg</span>
         </div>
       </div>`;
