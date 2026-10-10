@@ -1085,28 +1085,29 @@ function renderResumen() {
     <!-- Bono neto total del equipo -->
     <div class="chart-wrap" style="margin-bottom:20px">
       <div class="chart-label">Bono Neto Total del Equipo</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:10px">
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
-          <div style="font-size:11px;color:var(--fg2);margin-bottom:4px">Conductores</div>
-          <div style="font-size:20px;font-weight:800;color:${allStats.reduce((s,c)=>s+Number(c.bono_c||0),0)>=0?'#059669':'#DC2626'}">${fmtCurrency(allStats.reduce((s,c)=>s+Number(c.bono_c||0),0))}</div>
-        </div>
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
-          <div style="font-size:11px;color:var(--fg2);margin-bottom:4px">Ayudantes</div>
-          <div style="font-size:20px;font-weight:800;color:${allStats.reduce((s,c)=>s+Number(c.bono_a||0),0)>=0?'#059669':'#DC2626'}">${fmtCurrency(allStats.reduce((s,c)=>s+Number(c.bono_a||0),0))}</div>
-        </div>
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
-          <div style="font-size:11px;color:var(--fg2);margin-bottom:4px">Jefatura (si se activa)</div>
-          <div style="font-size:20px;font-weight:800;color:${bj.activado?'#059669':'var(--fg2)'}">
-            ${bj.activado ? fmtCurrency(BONO_JEFE + BONO_AUX1 + BONO_AUX2) : '—'}
-          </div>
-        </div>
-        <div style="background:${totalBono>=0?'#DCFCE7':'#FEF2F2'};border:2px solid ${totalBono>=0?'#86EFAC':'#FCA5A5'};border-radius:10px;padding:12px 14px">
-          <div style="font-size:11px;font-weight:700;color:var(--fg2);margin-bottom:4px">TOTAL A PAGAR</div>
-          <div style="font-size:22px;font-weight:900;color:${totalBono>=0?'#059669':'#DC2626'}">
-            ${fmtCurrency(totalBono + (bj.activado ? BONO_JEFE + BONO_AUX1 + BONO_AUX2 : 0))}
-          </div>
-        </div>
-      </div>
+      ${(()=>{
+        const _bc   = allStats.reduce((s,c)=>s+Number(c.bono_c||0),0);
+        const _ba   = allStats.reduce((s,c)=>s+Number(c.bono_a||0),0);
+        const _exC  = conductores.reduce((s,c)=>{ const pct=stats[c.clave]?.pct_tiempo??0; return s+(pct>=metaPct?BONO_EXTRA_COND:0); },0);
+        const _exA  = conductores.reduce((s,c)=>{ const pct=stats[c.clave]?.pct_tiempo??0; return s+(pct>=metaPct?BONO_EXTRA_AYUD:0); },0);
+        const _jef  = bj.activado ? BONO_JEFE + BONO_AUX1 + BONO_AUX2 : 0;
+        const _tot  = _bc + _ba + _exC + _exA + _jef;
+        const card = (label, val, accent=false) => `
+          <div style="background:${accent?(_tot>=0?'#DCFCE7':'#FEF2F2'):'var(--bg)'};border:${accent?'2px solid '+(_tot>=0?'#86EFAC':'#FCA5A5'):'1px solid var(--border)'};border-radius:10px;padding:12px 14px">
+            <div style="font-size:11px;font-weight:${accent?'700':'400'};color:var(--fg2);margin-bottom:4px">${label}</div>
+            <div style="font-size:${accent?'22':'20'}px;font-weight:${accent?'900':'800'};color:${typeof val==='number'?(val>=0?'#059669':'#DC2626'):'var(--fg2)'}">
+              ${typeof val==='number' ? fmtCurrency(val) : val}
+            </div>
+          </div>`;
+        return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">
+          ${card('Conductores', _bc)}
+          ${card('Extra Cond. 85%', _exC > 0 ? _exC : '—')}
+          ${card('Ayudantes', _ba)}
+          ${card('Extra Ayud. 85%', _exA > 0 ? _exA : '—')}
+          ${card('Jefatura (si se activa)', bj.activado ? _jef : '—')}
+          ${card('TOTAL A PAGAR', _tot, true)}
+        </div>`;
+      })()}
       <!-- Fila por conductor -->
       <div style="font-size:13px;font-weight:800;letter-spacing:.04em;color:var(--fg);margin:16px 0 8px;text-transform:uppercase;border-bottom:2px solid var(--border);padding-bottom:6px">Totales de Bonificación</div>
       ${(() => {
