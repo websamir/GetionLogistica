@@ -33,7 +33,7 @@ CARPETA  = Path(r"C:\Automatizaciones\gestion_logistica")
 DB_PATH  = Path(__file__).parent / "backend" / "data" / "logistica.db"
 
 # URL base de la app (sin barra final)
-URL_BASE   = "http://localhost:5000"
+URL_BASE   = "https://getionlogistica.onrender.com"
 GL_USUARIO = os.environ.get("GL_USUARIO", "admin")
 GL_CLAVE   = os.environ.get("GL_CLAVE",   "admin2026")
 
