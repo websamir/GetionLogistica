@@ -7,8 +7,13 @@ from datetime import date, datetime
 import re, os
 
 CONDUCTORES_PLACAS = {
-    'WGX062': 'ROA', 'WGX060': 'MARTINEZ', 'TDU-499': 'MARIN',
-    'WGX061': 'MENDOZA', 'WGD149': 'NIÑO',
+    # Placas actuales
+    'WGX-062': 'ROA',      'WGX062': 'ROA',
+    'WGX-060': 'MARTINEZ', 'WGX060': 'MARTINEZ',
+    'TDU-499': 'MARIN',    'TDU499': 'MARIN',
+    'WGV-233': 'MENDOZA',  'WGV233': 'MENDOZA',
+    'WGX-061': 'NIÑO',     'WGX061': 'NIÑO',
+    'WGD-149': 'RICO',     'WGD149': 'RICO',
 }
 CONDUCTORES_KEYS = list(CONDUCTORES_PLACAS.values())
 
