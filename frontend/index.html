@@ -1123,37 +1123,35 @@ function renderResumen() {
           const s = getCondStats(c.clave);
           const condPct = stats[c.clave]?.pct_tiempo ?? 0;
           const exC = condPct >= metaPct ? BONO_EXTRA_COND : 0;
-          const exA = condPct >= metaPct ? BONO_EXTRA_AYUD : 0;
-          const tot = Number(s.bono_c||0) + Number(s.bono_a||0) + exC + exA;
+          const tot = Number(s.bono_c||0) + exC;
           const clr = tot >= 0 ? '#059669' : '#DC2626';
           return `<tr style="border-bottom:1px solid var(--border)">
             <td style="padding:6px 8px;font-weight:600;color:${COND_COLORS[c.clave]||'var(--fg)'}">${c.nombre || c.clave}</td>
             ${td(fmtCurrency(s.bono_c||0),(s.bono_c||0)>=0?'#059669':'#DC2626',true)}
-            ${td(fmtCurrency(s.bono_a||0),(s.bono_a||0)>=0?'#059669':'#DC2626',true)}
             ${td(exC>0?'+'+fmtCurrency(exC):'—',exC>0?'#059669':'var(--fg2)',true)}
-            ${td(exA>0?'+'+fmtCurrency(exA):'—',exA>0?'#059669':'var(--fg2)',true)}
             ${td(fmtCurrency(tot),clr,true)}
           </tr>`;
         }).join('');
         const jefaturaRows = bj.activado ? `
           <tr style="border-bottom:1px solid var(--border);background:rgba(5,150,105,.04)">
             <td style="padding:6px 8px;font-weight:600;color:#0369A1">Jefe de Logística</td>
-            ${td('—','var(--fg2)')} ${td('—','var(--fg2)')} ${td('—','var(--fg2)')} ${td('—','var(--fg2)')}
+            ${td('—','var(--fg2)')} ${td('—','var(--fg2)')}
             ${td(fmtCurrency(BONO_JEFE),'#059669',true)}
           </tr>
           <tr style="border-bottom:1px solid var(--border);background:rgba(5,150,105,.04)">
             <td style="padding:6px 8px;font-weight:600;color:#0369A1">Auxiliar Jefatura 1</td>
-            ${td('—','var(--fg2)')} ${td('—','var(--fg2)')} ${td('—','var(--fg2)')} ${td('—','var(--fg2)')}
+            ${td('—','var(--fg2)')} ${td('—','var(--fg2)')}
             ${td(fmtCurrency(BONO_AUX1),'#059669',true)}
           </tr>
           <tr style="border-bottom:1px solid var(--border);background:rgba(5,150,105,.04)">
             <td style="padding:6px 8px;font-weight:600;color:#0369A1">Auxiliar Jefatura 2</td>
-            ${td('—','var(--fg2)')} ${td('—','var(--fg2)')} ${td('—','var(--fg2)')} ${td('—','var(--fg2)')}
+            ${td('—','var(--fg2)')} ${td('—','var(--fg2)')}
             ${td(fmtCurrency(BONO_AUX2),'#059669',true)}
           </tr>` : '';
+        const grandTotalCond = totalCondBono + totalExtraCond;
         return `<table style="width:100%;border-collapse:collapse;font-size:12px">
           <thead><tr style="border-bottom:1px solid var(--border)">
-            ${th('Persona','left')}${th('Bono Cond.')}${th('Bono Ayud.')}${th('Extra Cond. 85%')}${th('Extra Ayud. 85%')}${th('Total')}
+            ${th('Persona','left')}${th('Bono Cond.')}${th('Extra Cond. 85%')}${th('Total')}
           </tr></thead>
           <tbody>
             ${condRows}
@@ -1161,10 +1159,8 @@ function renderResumen() {
             <tr style="background:var(--surface);font-weight:800;border-top:2px solid var(--border)">
               <td style="padding:7px 8px">TOTAL</td>
               <td style="padding:7px 8px;text-align:right">${fmtCurrency(totalCondBono)}</td>
-              <td style="padding:7px 8px;text-align:right">${fmtCurrency(totalAyudBono)}</td>
               <td style="padding:7px 8px;text-align:right">${fmtCurrency(totalExtraCond)}</td>
-              <td style="padding:7px 8px;text-align:right">${fmtCurrency(totalExtraAyud)}</td>
-              <td style="padding:7px 8px;text-align:right;color:${grandTotal>=0?'#059669':'#DC2626'}">${fmtCurrency(grandTotal)}</td>
+              <td style="padding:7px 8px;text-align:right;color:${grandTotalCond>=0?'#059669':'#DC2626'}">${fmtCurrency(grandTotalCond)}</td>
             </tr>
           </tbody>
         </table>`;
