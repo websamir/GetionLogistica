@@ -1223,51 +1223,30 @@ function renderResumen() {
     });
     const maxVal = Math.max(...data.map(d => d.total), 1);
     const slotW  = chartW / data.length;
-    const barW   = Math.max(20, Math.min(48, slotW * 0.6));
+    const gap    = 2;
+    const barW   = Math.max(8, Math.min(20, (slotW - gap * 4) / 3));
     const yBase  = padT + chartH;
-
-    // Líneas guía Y
-    const yStepCount = Math.min(maxVal, 5);
-    const yStepVal   = Math.ceil(maxVal / yStepCount);
-    const yTicks     = [];
-    for (let n = 0; n <= maxVal; n += yStepVal) yTicks.push(n);
-    if (yTicks[yTicks.length-1] < maxVal) yTicks.push(maxVal);
-    const guides = yTicks.map(n => {
-      const y = (yBase - Math.round((n/maxVal)*chartH)).toFixed(1);
-      return `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--border)" stroke-width="${n===0?1.2:0.6}" ${n===0?'':'stroke-dasharray="4,3"'}/>
-              <text x="${padL-4}" y="${(+y+3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--fg2)">${n}</text>`;
-    }).join('');
-    const yAxis = `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${yBase}" stroke="var(--border)" stroke-width="1.2"/>
-      <text x="${padL-22}" y="${(padT+chartH/2).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--fg2)"
-            transform="rotate(-90,${padL-22},${(padT+chartH/2).toFixed(1)})">Cantidad</text>`;
-
+    const legend = `<text x="${padL}" y="12" font-size="9" fill="#64748B">■ <tspan fill="#1e3a5f">Total</tspan>   ■ <tspan fill="#10B981">A tiempo</tspan>   ■ <tspan fill="#EF4444">Tarde</tspan></text>`;
     const bars = data.map((d, i) => {
-      const cx   = padL + i * slotW + slotW / 2;
-      const x    = cx - barW / 2;
-      const totH = Math.max(d.total > 0 ? 3 : 0, Math.round((d.total / maxVal) * chartH));
-      const okH  = Math.round((d.ok    / maxVal) * chartH);
-      const tdH  = totH - okH;
+      const cx  = padL + i * slotW + slotW / 2;
+      const x1  = cx - barW * 1.5 - gap;
+      const x2  = cx - barW / 2;
+      const x3  = cx + barW / 2 + gap;
+      const tH  = Math.max(d.total > 0 ? 2 : 0, Math.round((d.total / maxVal) * chartH));
+      const oH  = Math.max(d.ok    > 0 ? 2 : 0, Math.round((d.ok    / maxVal) * chartH));
+      const rdH = Math.max(d.tarde > 0 ? 2 : 0, Math.round((d.tarde / maxVal) * chartH));
       const pesoStr = d.peso >= 1000 ? (d.peso/1000).toFixed(1)+'t' : Math.round(d.peso)+'kg';
-      const tardeTxtY = (yBase - totH + tdH/2 + 4).toFixed(1);
-      const okTxtY    = (yBase - okH/2 + 4).toFixed(1);
       return `
-        <rect x="${x.toFixed(1)}" y="${(yBase-okH).toFixed(1)}"  width="${barW}" height="${okH.toFixed(1)}"  fill="#059669" rx="3"/>
-        ${okH >= 14 && d.ok > 0   ? `<text x="${cx}" y="${okTxtY}"    text-anchor="middle" font-size="10" fill="#fff" font-weight="700">${d.ok}</text>` : ''}
-        <rect x="${x.toFixed(1)}" y="${(yBase-totH).toFixed(1)}" width="${barW}" height="${tdH.toFixed(1)}" fill="#EF4444" rx="3"/>
-        ${tdH >= 14 && d.tarde > 0 ? `<text x="${cx}" y="${tardeTxtY}" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">${d.tarde}</text>` : ''}
-        <text x="${cx}" y="${(yBase-totH-5).toFixed(1)}" text-anchor="middle" font-size="11" fill="var(--fg)" font-weight="700">${d.total}</text>
-        <text x="${cx}" y="${(yBase+13).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--fg2)">${d.label}</text>
-        <text x="${cx}" y="${(yBase+25).toFixed(1)}" text-anchor="middle" font-size="9"  fill="#0369A1">${pesoStr}</text>`;
+        <rect x="${x1.toFixed(1)}" y="${yBase-tH}"  width="${barW}" height="${tH}"  fill="#1e3a5f" rx="2"/>
+        <text x="${(x1+barW/2).toFixed(1)}" y="${yBase-tH-3}"  text-anchor="middle" font-size="9" fill="var(--fg2)">${d.total}</text>
+        <rect x="${x2.toFixed(1)}" y="${yBase-oH}"  width="${barW}" height="${oH}"  fill="#10B981" rx="2"/>
+        <text x="${(x2+barW/2).toFixed(1)}" y="${yBase-oH-3}"  text-anchor="middle" font-size="9" fill="#10B981">${d.ok}</text>
+        <rect x="${x3.toFixed(1)}" y="${yBase-rdH}" width="${barW}" height="${rdH}" fill="#EF4444" rx="2"/>
+        <text x="${(x3+barW/2).toFixed(1)}" y="${yBase-rdH-3}" text-anchor="middle" font-size="9" fill="#EF4444">${d.tarde}</text>
+        <text x="${cx}" y="${yBase+13}" text-anchor="middle" font-size="10" fill="var(--fg2)">${d.label}</text>
+        <text x="${cx}" y="${yBase+24}" text-anchor="middle" font-size="9"  fill="#0369A1">${pesoStr}</text>`;
     }).join('');
-
-    el.innerHTML = `
-      <svg viewBox="0 0 ${W} ${H+14}" style="width:100%;max-width:${W}px;height:auto;display:block">
-        ${guides}${yAxis}${bars}
-      </svg>
-      <div style="display:flex;gap:16px;font-size:11px;color:var(--fg2);margin-top:4px;padding-left:4px">
-        <span style="display:flex;align-items:center;gap:5px"><span style="width:11px;height:11px;background:#059669;border-radius:3px;display:inline-block"></span>A tiempo (≤5d)</span>
-        <span style="display:flex;align-items:center;gap:5px"><span style="width:11px;height:11px;background:#EF4444;border-radius:3px;display:inline-block"></span>Tarde</span>
-      </div>`;
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H+10}" style="width:100%;max-width:${W}px;height:auto;display:block">${legend}${bars}</svg>`;
   })();
 
   // Cumplimiento por conductor (barras de progreso)
