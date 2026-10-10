@@ -1015,6 +1015,9 @@ function renderResumen() {
       <div class="kpi ${totalBono >= 0 ? 'ok' : 'danger'}"><div class="kpi-label">Bono Neto Equipo</div><div class="kpi-value">${fmtCurrency(totalBono)}</div></div>
     </div>
 
+    <!-- Tarjetas de conductores -->
+    <div class="conductor-grid" id="res-cards" style="margin-bottom:20px"></div>
+
     <!-- Bono de jefatura -->
     <div class="chart-wrap" style="margin-bottom:20px">
       <div class="chart-label">Bono de Jefatura por Cumplimiento</div>
@@ -1250,7 +1253,6 @@ function renderResumen() {
       <div id="res-stack-chart"></div>
     </div>
 
-    <div class="conductor-grid" id="res-cards"></div>
   `;
 
   // Gráfica Total vs A tiempo por conductor (barras lado a lado)
