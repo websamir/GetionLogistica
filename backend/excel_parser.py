@@ -178,6 +178,7 @@ def _parse_facturas(data_rows):
             'cliente':   str(col(r, 'nombres', 'cliente') or ''),
             'ciudad':    str(col(r, 'ciudad') or ''),
             'dpto':      str(col(r, 'dpto', 'departamento') or ''),
+            'bodega':    str(col(r, 'bodega', 'sede') or ''),
             'placa':     str(placa_raw),
             'valor':     float(valor) if valor not in (None, '', 'None') else None,
             'peso':      float(peso)  if peso  not in (None, '', 'None') else None,

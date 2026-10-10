@@ -3,19 +3,23 @@ Actualizador automático — Gestión Logística INVESAKK SAS
 NIT 802014471-6 · Barranquilla, Colombia
 
 Qué hace:
-  1. Consulta SQL Server y genera un Excel de facturas (y opcionalmente conductores).
-  2. Sube los datos directamente a la API de GestionLogistica vía JWT.
+  1. Consulta SQL Server y obtiene las facturas de logística.
+  2. Sube los datos a la API de GestionLogistica vía JWT.
   3. Registra todo en log.txt.
 
 Requisitos (instalar una sola vez):
-    pip install pandas openpyxl pyodbc requests
+    pip install pyodbc pandas openpyxl requests
 
-Credenciales: NO van en el código. Defínalas como variables de entorno:
-    setx GL_USUARIO "admin"
-    setx GL_CLAVE   "admin2026"
+Credenciales — definir como variables de entorno (solo una vez):
+    setx GL_USUARIO  "admin"
+    setx GL_CLAVE    "admin2026"
+    setx SQL_SERVER  "NOMBRE_O_IP_DEL_SERVIDOR"
+    setx SQL_DB      "NOMBRE_BASE_DE_DATOS"
+    setx SQL_USER    "usuario_sql"        (dejar vacío si usa Windows Auth)
+    setx SQL_PASS    "clave_sql"          (dejar vacío si usa Windows Auth)
 
-Horario: programa este script en el Programador de tareas de Windows
-con repetición cada 1 hora. El código ignora ejecuciones fuera de horario.
+Programación: agregar en el Programador de tareas de Windows
+con repetición cada 1 hora entre 7:00 y 19:00.
 """
 import os
 import sys
@@ -24,18 +28,21 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-import sqlite3
+import pyodbc
 import pandas as pd
 import requests
 
 # ─── CONFIGURACIÓN ──────────────────────────────────────────────────────────
-CARPETA  = Path(r"C:\Automatizaciones\gestion_logistica")
-DB_PATH  = Path(__file__).parent / "backend" / "data" / "logistica.db"
+CARPETA = Path(r"C:\Automatizaciones\gestion_logistica")
 
-# URL base de la app (sin barra final)
 URL_BASE   = "https://getionlogistica.onrender.com"
 GL_USUARIO = os.environ.get("GL_USUARIO", "admin")
 GL_CLAVE   = os.environ.get("GL_CLAVE",   "admin2026")
+
+SQL_SERVER = os.environ.get("SQL_SERVER", "")
+SQL_DB     = os.environ.get("SQL_DB",     "")
+SQL_USER   = os.environ.get("SQL_USER",   "")   # vacío = Windows Auth
+SQL_PASS   = os.environ.get("SQL_PASS",   "")
 
 HORA_INICIO = 7    # 7 AM inclusive
 HORA_FIN    = 19   # 7 PM exclusive
@@ -50,100 +57,122 @@ logging.basicConfig(
 log = logging.getLogger()
 
 
-# ─── HELPERS ────────────────────────────────────────────────────────────────
+# ─── CONEXIÓN SQL SERVER ─────────────────────────────────────────────────────
+def get_connection():
+    if SQL_USER:
+        cs = (
+            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+            f"SERVER={SQL_SERVER};DATABASE={SQL_DB};"
+            f"UID={SQL_USER};PWD={SQL_PASS};"
+            f"TrustServerCertificate=yes;"
+        )
+    else:
+        cs = (
+            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+            f"SERVER={SQL_SERVER};DATABASE={SQL_DB};"
+            f"Trusted_Connection=yes;"
+            f"TrustServerCertificate=yes;"
+        )
+    return pyodbc.connect(cs, timeout=30)
+
+
+QUERY = """
+SELECT
+    conductores_sakk.nit_trans,
+    terceros.nit_real                                                        AS cedula,
+    conductores_sakk.nombre,
+    conductores_sakk.meta_peso,
+    conductores_sakk.meta_facs,
+    documentos.tipo,
+    tipo_transacciones.descripcion,
+    documentos.numero,
+    terceros_1.nit,
+    terceros_1.nombres,
+    documentos.valor_total                                                   AS total_trans,
+    conductores_sakk.placa,
+    ISNULL(v_facturas_pesos_items.peso_total, 0)                             AS peso_total,
+    v_terceros_direcciones.ciudad,
+    v_terceros_direcciones.dpto,
+    documentos.fecha_hora                                                    AS fec_Factura,
+    documentos.fecha_hora_entrega                                            AS fec_promesa_entrega,
+    doc_cumplidos_docuware.fecha_entrega                                     AS fec_entrega_logistica,
+    DATEDIFF(hour, documentos.fecha_hora_entrega,
+             doc_cumplidos_docuware.fecha_entrega)                           AS diferencia_fecha_horas,
+    DATEDIFF(day,  documentos.fecha_hora_entrega,
+             doc_cumplidos_docuware.fecha_entrega)                           AS diferencia_fecha_dias,
+    documentos.bodega
+FROM doc_cumplidos_docuware
+INNER JOIN documentos
+    ON  doc_cumplidos_docuware.Numero_Factura = documentos.numero
+    AND doc_cumplidos_docuware.Tipo_Factura   = documentos.tipo
+INNER JOIN conductores_sakk
+    ON  doc_cumplidos_docuware.conductor = conductores_sakk.nombre
+INNER JOIN terceros
+    ON  conductores_sakk.nit_trans = terceros.nit
+INNER JOIN v_terceros_direcciones
+    ON  documentos.nit              = v_terceros_direcciones.nit
+    AND documentos.codigo_direccion = v_terceros_direcciones.codigo_direccion
+INNER JOIN tipo_transacciones
+    ON  documentos.tipo = tipo_transacciones.tipo
+INNER JOIN terceros AS terceros_1
+    ON  documentos.nit = terceros_1.nit
+LEFT OUTER JOIN v_facturas_pesos_items
+    ON  documentos.tipo   = v_facturas_pesos_items.tipo
+    AND documentos.numero = v_facturas_pesos_items.numero
+WHERE (documentos.concepto IN (2, 6, 5, 16))
+  AND (conductores_sakk.unidad_despachos <> '999')
+  AND (doc_cumplidos_docuware.fecha_entrega >= GETDATE() - 60)
+  AND (documentos.sw IN ('1', '16'))
+ORDER BY conductores_sakk.unidad_despachos, conductores_sakk.nombre
+"""
+
+
+def leer_facturas_sqlserver() -> pd.DataFrame:
+    log.info("Conectando a SQL Server: %s / %s", SQL_SERVER, SQL_DB)
+    conn = get_connection()
+    df = pd.read_sql(QUERY, conn)
+    conn.close()
+    log.info("SQL Server devolvió %d filas.", len(df))
+    if df.empty:
+        raise RuntimeError("La consulta no devolvió filas.")
+    return df
+
+
+# ─── HELPERS API ─────────────────────────────────────────────────────────────
 def obtener_token() -> str:
-    """Autentica en la API y devuelve el JWT."""
     r = requests.post(
         f"{URL_BASE}/api/auth/login",
         json={"usuario": GL_USUARIO, "password": GL_CLAVE},
-        timeout=15,
+        timeout=20,
     )
     r.raise_for_status()
     token = r.json().get("token")
     if not token:
         raise RuntimeError(f"Login fallido: {r.text}")
-    log.info("Token obtenido OK (usuario: %s)", GL_USUARIO)
+    log.info("Token obtenido OK")
     return token
 
 
-def leer_facturas_sqlite() -> pd.DataFrame:
-    """Lee facturas desde la BD SQLite local y las devuelve en el formato
-    que espera el parser de la API."""
-    if not DB_PATH.exists():
-        raise RuntimeError(f"No se encontró la BD: {DB_PATH}")
-    with sqlite3.connect(DB_PATH) as cn:
-        cn.row_factory = sqlite3.Row
-        rows = cn.execute("""
-            SELECT
-                c.nombre        AS nombre,
-                f.placa,
-                f.tipo,
-                f.tip_desc      AS descripcion,
-                f.num           AS numero,
-                f.cliente       AS nombres,
-                f.ciudad,
-                f.dpto,
-                f.valor         AS total_trans,
-                f.peso          AS peso_total,
-                f.fec_fact      AS fec_factura,
-                f.fec_promesa   AS fec_promesa_entrega,
-                f.fec_entr      AS fec_entrega_logistica,
-                f.dif_dias      AS diferencia_fecha_dias,
-                f.dif_horas     AS diferencia_fecha_horas
-            FROM facturas f
-            JOIN conductores c ON c.clave = f.cond_key
-            ORDER BY f.fec_entr
-        """).fetchall()
-    if not rows:
-        raise RuntimeError("La tabla facturas está vacía.")
-    df = pd.DataFrame([dict(r) for r in rows])
-    log.info("SQLite devolvió %d filas.", len(df))
-    return df
-
-
-def leer_conductores_sqlite() -> pd.DataFrame:
-    """Lee conductores desde la BD SQLite local."""
-    with sqlite3.connect(DB_PATH) as cn:
-        df = pd.read_sql("SELECT * FROM conductores ORDER BY clave", cn)
-    log.info("SQLite conductores: %d filas.", len(df))
-    return df
-
-
-def df_a_excel_tmp(df: pd.DataFrame, hoja: str) -> Path:
-    """Guarda el DataFrame en un Excel temporal y devuelve la ruta."""
+def df_a_excel_tmp(df: pd.DataFrame) -> Path:
     tmp = Path(tempfile.mktemp(suffix=".xlsx", dir=CARPETA))
-    with pd.ExcelWriter(tmp, engine="openpyxl",
-                        datetime_format="yyyy-mm-dd") as xw:
-        df.to_excel(xw, sheet_name=hoja, index=False)
+    with pd.ExcelWriter(tmp, engine="openpyxl", datetime_format="yyyy-mm-dd") as xw:
+        df.to_excel(xw, sheet_name="Facturas", index=False)
     return tmp
 
 
-def subir_excel(ruta: Path, tipo: str, token: str) -> dict:
-    """Sube el Excel al endpoint /api/admin/upload/<tipo>."""
+def subir_excel(ruta: Path, token: str) -> dict:
     headers = {"Authorization": f"Bearer {token}"}
     with open(ruta, "rb") as f:
         r = requests.post(
-            f"{URL_BASE}/api/admin/upload/{tipo}",
+            f"{URL_BASE}/api/admin/upload/facturas",
             headers=headers,
             files={"file": (ruta.name, f,
                             "application/vnd.openxmlformats-officedocument"
                             ".spreadsheetml.sheet")},
-            timeout=120,
+            timeout=180,
         )
     r.raise_for_status()
     return r.json()
-
-
-def cargar(tipo: str, df: pd.DataFrame, hoja: str, token: str):
-    """Flujo completo: DataFrame → Excel temporal → API."""
-    log.info("=== Iniciando carga: %s ===", tipo)
-    tmp = df_a_excel_tmp(df, hoja)
-    try:
-        resultado = subir_excel(tmp, tipo, token)
-        log.info("Carga %s OK: %s", tipo, resultado)
-        print(f"  [{tipo}] OK — {resultado}")
-    finally:
-        tmp.unlink(missing_ok=True)
 
 
 # ─── MAIN ───────────────────────────────────────────────────────────────────
@@ -151,19 +180,18 @@ if __name__ == "__main__":
     hora = datetime.now().hour
     if not (HORA_INICIO <= hora < HORA_FIN):
         log.info("Fuera de horario (%02d:xx), sin acción.", hora)
-        print(f"Fuera de horario ({hora:02d}:xx). El script corre entre {HORA_INICIO}:00 y {HORA_FIN}:00.")
+        print(f"Fuera de horario ({hora:02d}:xx). Corre entre {HORA_INICIO}:00 y {HORA_FIN}:00.")
         sys.exit(0)
 
     print(f"=== Actualizador GestionLogistica — {datetime.now():%Y-%m-%d %H:%M} ===")
+    tmp = None
     try:
+        df = leer_facturas_sqlserver()
         token = obtener_token()
-
-        df_fact = leer_facturas_sqlite()
-        cargar("facturas", df_fact, "Facturas", token)
-
-        df_cond = leer_conductores_sqlite()
-        cargar("conductores", df_cond, "Conductores", token)
-
+        tmp = df_a_excel_tmp(df)
+        resultado = subir_excel(tmp, token)
+        log.info("Carga OK: %s", resultado)
+        print(f"  OK — {resultado}")
         log.info("Actualización completada.")
         print("Actualización completada correctamente.")
 
@@ -171,3 +199,7 @@ if __name__ == "__main__":
         log.exception("ERROR: %s", e)
         print(f"ERROR: {e}")
         sys.exit(1)
+
+    finally:
+        if tmp and tmp.exists():
+            tmp.unlink(missing_ok=True)
