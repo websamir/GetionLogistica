@@ -285,12 +285,12 @@ def get_facturas(cond_key=None, mes=None):
         params.append(cond_key)
     if mes:
         if USING_PG:
-            sql += " AND to_char(fec_fact,'YYYY-MM')=%s"
+            sql += " AND to_char(fec_entr,'YYYY-MM')=%s"
         else:
-            sql += " AND fec_fact LIKE ?"
+            sql += " AND fec_entr LIKE ?"
             mes = mes + '%'
         params.append(mes)
-    sql += " ORDER BY fec_fact DESC"
+    sql += " ORDER BY fec_entr DESC"
     rows = fetchall(conn, sql, params)
     close(conn)
     return rows
@@ -299,9 +299,9 @@ def get_facturas(cond_key=None, mes=None):
 def get_meses_disponibles(cond_key=None):
     conn = get_db()
     if USING_PG:
-        sql = "SELECT DISTINCT to_char(fec_fact,'YYYY-MM') AS mes FROM facturas WHERE fec_fact IS NOT NULL"
+        sql = "SELECT DISTINCT to_char(fec_entr,'YYYY-MM') AS mes FROM facturas WHERE fec_entr IS NOT NULL"
     else:
-        sql = "SELECT DISTINCT substr(fec_fact,1,7) AS mes FROM facturas WHERE fec_fact IS NOT NULL"
+        sql = "SELECT DISTINCT substr(fec_entr,1,7) AS mes FROM facturas WHERE fec_entr IS NOT NULL"
     params = []
     if cond_key:
         sql += f" AND cond_key={p()}"
