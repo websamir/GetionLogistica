@@ -89,7 +89,7 @@ def parse_excel(filepath, tipo):
 
     # Intentar hoja por nombre, si no la primera
     sheet_map = {
-        'facturas':    ['Facturas', 'Sheet1', 'Hoja1'],
+        'facturas':    ['Facturas', 'Sheet1', 'Hoja1', 'v_ventas_vendedores_ppto'],
         'conductores': ['Conductores', 'Sheet2', 'Hoja2'],
         'gps':         ['GPS', 'Sheet3', 'Hoja3'],
         'bodegas':     ['Bodegas', 'Sheet4', 'Hoja4'],
@@ -97,12 +97,22 @@ def parse_excel(filepath, tipo):
     ws = None
     for name in sheet_map.get(tipo, []):
         if name in wb.sheetnames:
-            ws = wb[name]
-            break
+            candidate = wb[name]
+            if candidate.max_row and candidate.max_row >= 2:
+                ws = candidate
+                break
     if ws is None:
         ws = wb.active
 
     rows = list(ws.iter_rows(values_only=True))
+    # Si la hoja seleccionada está vacía, buscar la primera con datos
+    if len(rows) < 2:
+        for name in wb.sheetnames:
+            candidate = wb[name]
+            crows = list(candidate.iter_rows(values_only=True))
+            if len(crows) >= 2:
+                rows = crows
+                break
     if len(rows) < 2:
         return [], "El archivo no tiene datos suficientes"
 
@@ -151,12 +161,12 @@ def _parse_facturas(data_rows):
         if not cond_key:
             continue
 
-        tipo     = str(col(r, 'tipo') or '').strip().upper()
+        tipo     = str(col(r, 'tipo', 'tipodoc') or '').strip().upper()
         tip_desc = str(col(r, 'descripcion') or '').strip()
         es_mt    = tipo_es_mt(tipo) or bool(re.match(r'^si$', str(col(r, 'esnt', 'nt') or ''), re.I))
 
         # Fechas
-        fec_fact    = fmt_excel_date(col(r, 'fecfactura', 'fec_Factura', 'fechafactura', 'fecha_factura'))
+        fec_fact    = fmt_excel_date(col(r, 'fecfactura', 'fec_Factura', 'fechafactura', 'fecha_factura', 'fecha_hora', 'fechahora'))
         fec_promesa = fmt_excel_date(col(r, 'fecpromesaentrega', 'fec_promesa_entrega', 'fechapromesa'))
         fec_entr    = fmt_excel_date(col(r, 'fecentreganegocio', 'fec_entrega_logistica', 'fechaentrega', 'fecha_entrega'))
 
@@ -172,7 +182,7 @@ def _parse_facturas(data_rows):
 
         results.append({
             'cond_key':  cond_key,
-            'num':       str(col(r, 'numero', 'factura', 'num') or '—'),
+            'num':       str(col(r, 'numero', 'numdoc', 'factura', 'num') or '—'),
             'tipo':      tipo,
             'tip_desc':  tip_desc,
             'cliente':   str(col(r, 'nombres', 'cliente') or ''),
