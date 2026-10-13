@@ -285,12 +285,12 @@ def get_facturas(cond_key=None, mes=None):
         params.append(cond_key)
     if mes:
         if USING_PG:
-            sql += " AND to_char(fec_entr,'YYYY-MM')=%s"
+            sql += " AND (to_char(fec_entr,'YYYY-MM')=%s OR (fec_entr IS NULL AND to_char(fec_fact,'YYYY-MM')=%s))"
+            params.extend([mes, mes])
         else:
-            sql += " AND fec_entr LIKE ?"
-            mes = mes + '%'
-        params.append(mes)
-    sql += " ORDER BY fec_entr DESC"
+            sql += " AND (fec_entr LIKE ? OR (fec_entr IS NULL AND fec_fact LIKE ?))"
+            params.extend([mes + '%', mes + '%'])
+    sql += " ORDER BY fec_entr DESC NULLS LAST"
     rows = fetchall(conn, sql, params)
     close(conn)
     return rows
