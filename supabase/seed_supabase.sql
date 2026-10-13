@@ -125,11 +125,13 @@ INSERT INTO usuarios (usuario, password, role, cond_key, nombre, cargo, sede, ce
 
 -- ── CONDUCTORES ───────────────────────────────────────────────
 INSERT INTO conductores (clave, nombre, short, placa, pedidos, a_tiempo, h24, d2, bono_c, bono_a, meta_c, meta_a, meta_h24) VALUES
-('ROA',      'ROA — Julio Armando',  'ROA',   'WGX062',  170, 77, 0, 11,  264200,  132100, 1059600, 529800, 72),
-('MARTINEZ', 'MARTINEZ — Luis',       'MART',  'WGX060',  147, 59, 0, 11,  201000,  100500,  965200, 482600, 62),
-('MARIN',    'MARÍN — José',          'MARÍN', 'TDU-499',  70, 18, 1,  0,   35200,   17600,  646000, 323000, 30),
-('MENDOZA',  'MENDOZA — Luis',        'MEND.', 'WGX061',  200, 14, 0,  1, -110600,  -55300, 1188000, 594000, 85),
-('NIÑO',     'NIÑO — Ademir',         'NIÑO',  'WGD149',   66, 11, 0,  3,   -1400,    -700,  626000, 313000, 28);
+('ROA',         'ROA — Julio Armando',  'ROA',   'WGX062',  170, 77, 0, 11,  264200,  132100, 1059600, 529800, 72),
+('MARTINEZ',    'MARTINEZ — Luis',       'MART',  'WGX060',  147, 59, 0, 11,  201000,  100500,  965200, 482600, 62),
+('MARIN',       'MARÍN — José',          'MARÍN', 'TDU-499',  70, 18, 1,  0,   35200,   17600,  646000, 323000, 30),
+('MENDOZA',     'MENDOZA — Luis',        'MEND.', 'WGV-233',  200, 14, 0,  1, -110600,  -55300, 1188000, 594000, 85),
+('NIÑO',        'NIÑO — Ademir',         'NIÑO',  'WGX-061',   66, 11, 0,  3,   -1400,    -700,  626000, 313000, 28),
+('RICO',        'RICO',                  'RICO',  'WGD-149',    0,  0, 0,  0,       0,       0,       0,      0,  0),
+('SIN_ASIGNAR', 'Sin Asignar',           'S/A',   '',            0,  0, 0,  0,       0,       0,       0,      0,  0);
 
 -- ── GPS ───────────────────────────────────────────────────────
 INSERT INTO gps (placa, conductor, vel, acc, brk) VALUES
