@@ -179,17 +179,25 @@ def get_stats():
         GROUP BY cond_key
     """
     rows = db.fetchall(conn, sql, params)
+
+    # Pendientes sin asignar: placa vacía + fec_entr NULL, SIN filtro de mes
+    sin_asignar_sql = """
+        SELECT COUNT(*) AS total
+        FROM facturas
+        WHERE cond_key = 'SIN_ASIGNAR' AND fec_entr IS NULL AND placa = ''
+    """
+    sin_asignar_row = db.fetchall(conn, sin_asignar_sql, [])
+    total_pend_sin_asignar = (sin_asignar_row[0]['total'] if sin_asignar_row else 0) or 0
+
     db.close(conn)
 
     stats = {}
-    total_pend_sin_asignar = 0
     for r in rows:
+        if r['cond_key'] == 'SIN_ASIGNAR':
+            continue
         ped = r['pedidos'] or 0
         ent = r['entregadas'] or 0
         pct_tiempo = round(r['a_tiempo'] / ent * 100) if ent > 0 else 0
-        if r['cond_key'] == 'SIN_ASIGNAR':
-            total_pend_sin_asignar += r['pendientes'] or 0
-            continue
         stats[r['cond_key']] = {
             'cond_key':       r['cond_key'],
             'total':          r['total'],
