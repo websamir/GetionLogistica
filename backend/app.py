@@ -182,10 +182,14 @@ def get_stats():
     db.close(conn)
 
     stats = {}
+    total_pend_sin_asignar = 0
     for r in rows:
         ped = r['pedidos'] or 0
         ent = r['entregadas'] or 0
         pct_tiempo = round(r['a_tiempo'] / ent * 100) if ent > 0 else 0
+        if r['cond_key'] == 'SIN_ASIGNAR':
+            total_pend_sin_asignar += r['pendientes'] or 0
+            continue
         stats[r['cond_key']] = {
             'cond_key':       r['cond_key'],
             'total':          r['total'],
@@ -202,6 +206,7 @@ def get_stats():
             'bono_a':         round(r['bono_a'] or 0),
         }
 
+    stats['_sin_asignar'] = {'pendientes': total_pend_sin_asignar}
     return jsonify(stats)
 
 

@@ -157,9 +157,7 @@ def _parse_facturas(data_rows):
         # Conductor: columna 'nombre' (SQL) o 'conductor' (clásico)
         cond_raw  = col(r, 'nombre', 'conductor') or ''
         placa_raw = col(r, 'placa') or ''
-        cond_key  = detect_cond_key(cond_raw, placa_raw)
-        if not cond_key:
-            continue
+        cond_key  = detect_cond_key(cond_raw, placa_raw) or 'SIN_ASIGNAR'
 
         tipo     = str(col(r, 'tipo', 'tipodoc') or '').strip().upper()
         tip_desc = str(col(r, 'descripcion') or '').strip()

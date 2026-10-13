@@ -969,7 +969,8 @@ function renderResumen() {
   const _extraAyud = conductores.reduce((s,c)=>{ const pct=stats[c.clave]?.pct_tiempo??0; return s+(pct>=metaPct?BONO_EXTRA_AYUD:0); },0);
   const _bonoJef   = bj.activado ? BONO_JEFE + BONO_AUX1 + BONO_AUX2 : 0;
   const totalBono  = _bonoBase + _extraCond + _extraAyud + _bonoJef;
-  const totalPend  = allStats.reduce((s, c) => s + (c.pendientes || 0), 0);
+  const totalPend  = allStats.reduce((s, c) => s + (c.pendientes || 0), 0)
+                   + (stats['_sin_asignar']?.pendientes || 0);
   const totalATiempo = conductores.reduce((s, c) => s + (stats[c.clave]?.a_tiempo || 0), 0);
   const totalTarde   = totalEnt - totalATiempo;
   const totalPeso    = allStats.reduce((s, c) => s + (c.peso_total || 0), 0);
