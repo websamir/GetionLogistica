@@ -174,7 +174,7 @@ WHERE (documentos.concepto IN (2, 6, 5, 16))
   AND (documentos.fecha >= GETDATE() - 60)
   AND (v_logistica_desp_realizados_app.fec_entrega_logistica IS NULL)
 
-ORDER BY conductores_sakk.unidad_despachos, conductores_sakk.nombre
+ORDER BY nombre
 """
 
 
