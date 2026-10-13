@@ -77,104 +77,46 @@ def get_connection():
 
 
 QUERY = """
--- ① ENTREGADAS (últimos 60 días por fecha de entrega)
 SELECT
-    conductores_sakk.nit_trans,
-    terceros.nit_real                                          AS cedula,
+    v_logistica_desp_realizados_app.nit_trans,
+    terceros.nit_real                                        AS cedula,
     conductores_sakk.nombre,
-    conductores_sakk.meta_peso,
-    conductores_sakk.meta_facs,
+    v_logistica_desp_realizados_app.meta_peso,
+    v_logistica_desp_realizados_app.meta_facs,
     documentos.tipo,
     tipo_transacciones.descripcion,
     documentos.numero,
-    terceros_1.nit,
-    terceros_1.nombres,
-    documentos.valor_total                                     AS total_trans,
-    conductores_sakk.placa,
-    ISNULL(v_facturas_pesos_items.peso_total, 0)               AS peso_total,
+    documentos.nit,
+    v_terceros_direcciones.nombres,
+    v_logistica_desp_realizados_app.total_trans,
+    v_logistica_desp_realizados_app.placa,
+    v_logistica_desp_realizados_app.peso_total,
     v_terceros_direcciones.ciudad,
     v_terceros_direcciones.dpto,
-    documentos.fecha_hora                                      AS fec_Factura,
-    documentos.fecha_hora_entrega                              AS fec_promesa_entrega,
-    doc_cumplidos_docuware.fecha_entrega                       AS fec_entrega_logistica,
-    DATEDIFF(hour, documentos.fecha_hora_entrega,
-             doc_cumplidos_docuware.fecha_entrega)             AS diferencia_fecha_horas,
-    DATEDIFF(day,  documentos.fecha_hora_entrega,
-             doc_cumplidos_docuware.fecha_entrega)             AS diferencia_fecha_dias,
+    documentos.fecha_hora                                    AS fec_Factura,
+    v_logistica_desp_realizados_app.fec_promesa_entrega,
+    v_logistica_desp_realizados_app.fec_entrega_logistica,
+    v_logistica_desp_realizados_app.diferencia_fecha_horas,
+    v_logistica_desp_realizados_app.diferencia_fecha_dias,
     documentos.bodega
-FROM doc_cumplidos_docuware
-INNER JOIN documentos
-       ON  doc_cumplidos_docuware.Numero_Factura = documentos.numero
-       AND doc_cumplidos_docuware.Tipo_Factura   = documentos.tipo
-INNER JOIN conductores_sakk
-       ON  doc_cumplidos_docuware.conductor = conductores_sakk.nombre
-INNER JOIN terceros
-       ON  conductores_sakk.nit_trans = terceros.nit
+FROM documentos
 INNER JOIN v_terceros_direcciones
        ON  documentos.nit              = v_terceros_direcciones.nit
        AND documentos.codigo_direccion = v_terceros_direcciones.codigo_direccion
-INNER JOIN tipo_transacciones
-       ON  documentos.tipo = tipo_transacciones.tipo
-INNER JOIN terceros AS terceros_1
-       ON  documentos.nit = terceros_1.nit
-LEFT  JOIN v_facturas_pesos_items
-       ON  documentos.tipo   = v_facturas_pesos_items.tipo
-       AND documentos.numero = v_facturas_pesos_items.numero
-WHERE (documentos.concepto IN (2, 6, 5, 16))
-  AND (conductores_sakk.unidad_despachos <> '999')
-  AND (doc_cumplidos_docuware.fecha_entrega >= GETDATE() - 60)
-  AND (documentos.sw IN ('1', '16'))
-
-UNION ALL
-
--- ② PENDIENTES (sin fecha de entrega, documentos últimos 60 días)
-SELECT
-    conductores_sakk.nit_trans,
-    terceros.nit_real                                          AS cedula,
-    conductores_sakk.nombre,
-    conductores_sakk.meta_peso,
-    conductores_sakk.meta_facs,
-    documentos.tipo,
-    tipo_transacciones.descripcion,
-    documentos.numero,
-    terceros_1.nit,
-    terceros_1.nombres,
-    documentos.valor_total                                     AS total_trans,
-    conductores_sakk.placa,
-    ISNULL(v_facturas_pesos_items.peso_total, 0)               AS peso_total,
-    v_terceros_direcciones.ciudad,
-    v_terceros_direcciones.dpto,
-    documentos.fecha_hora                                      AS fec_Factura,
-    documentos.fecha_hora_entrega                              AS fec_promesa_entrega,
-    NULL                                                       AS fec_entrega_logistica,
-    NULL                                                       AS diferencia_fecha_horas,
-    NULL                                                       AS diferencia_fecha_dias,
-    documentos.bodega
-FROM documentos
-INNER JOIN v_logistica_desp_realizados_app
+LEFT OUTER JOIN v_logistica_desp_realizados_app
        ON  documentos.tipo   = v_logistica_desp_realizados_app.tipo
        AND documentos.numero = v_logistica_desp_realizados_app.numero
 INNER JOIN conductores_sakk
        ON  v_logistica_desp_realizados_app.placa = conductores_sakk.placa
 INNER JOIN terceros
        ON  conductores_sakk.nit_trans = terceros.nit
-INNER JOIN v_terceros_direcciones
-       ON  documentos.nit              = v_terceros_direcciones.nit
-       AND documentos.codigo_direccion = v_terceros_direcciones.codigo_direccion
 INNER JOIN tipo_transacciones
        ON  documentos.tipo = tipo_transacciones.tipo
-INNER JOIN terceros AS terceros_1
-       ON  documentos.nit = terceros_1.nit
-LEFT  JOIN v_facturas_pesos_items
-       ON  documentos.tipo   = v_facturas_pesos_items.tipo
-       AND documentos.numero = v_facturas_pesos_items.numero
-WHERE (documentos.concepto IN (2, 6, 5, 16))
-  AND (conductores_sakk.unidad_despachos <> '999')
-  AND (documentos.sw IN ('1'))
+WHERE (documentos.sw IN (1))
   AND (documentos.fecha >= GETDATE() - 60)
-  AND (v_logistica_desp_realizados_app.fec_entrega_logistica IS NULL)
-
-ORDER BY nombre
+  AND (documentos.concepto IN (2, 6, 5, 16))
+  AND (conductores_sakk.unidad_despachos <> '999')
+ORDER BY conductores_sakk.nombre
 """
 
 
