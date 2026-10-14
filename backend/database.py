@@ -126,17 +126,20 @@ def hash_pass(p):
 def init_db():
     if USING_PG:
         # Migraciones incrementales para producción
-        conn = get_db()
         try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    ALTER TABLE facturas ADD COLUMN IF NOT EXISTS bodega TEXT DEFAULT ''
-                """)
-            conn.commit()
+            conn = get_db()
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "ALTER TABLE facturas ADD COLUMN IF NOT EXISTS bodega TEXT DEFAULT ''"
+                    )
+                conn.commit()
+            except Exception:
+                conn.rollback()
+            finally:
+                conn.close()
         except Exception:
-            conn.rollback()
-        finally:
-            conn.close()
+            pass
         return
 
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
