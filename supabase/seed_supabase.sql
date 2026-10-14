@@ -54,6 +54,7 @@ CREATE TABLE facturas (
     ciudad      TEXT,
     dpto        TEXT,
     placa       TEXT,
+    bodega      TEXT,
     valor       NUMERIC,
     peso        NUMERIC,
     fec_fact    DATE,

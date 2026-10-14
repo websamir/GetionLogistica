@@ -238,6 +238,57 @@ def get_facturas():
 
 
 # ════════════════════════════════════════════════════════════════
+# BODEGAS VIRTUALES (50–70)
+# ════════════════════════════════════════════════════════════════
+@app.route('/api/stats/bodegas-virtuales')
+@jwt_required()
+def get_bodegas_virtuales():
+    mes = request.args.get('mes', '')
+    conn = db.get_db()
+
+    if mes:
+        if db.USING_PG:
+            mes_filter = "AND (to_char(fec_entr,'YYYY-MM') = %s OR fec_entr IS NULL)"
+            params = [mes]
+        else:
+            mes_filter = "AND (fec_entr LIKE ? OR fec_entr IS NULL)"
+            params = [mes + '%']
+    else:
+        mes_filter = ""
+        params = []
+
+    sql = f"""
+        SELECT
+            bodega,
+            SUM(CASE WHEN fec_entr IS NOT NULL AND es_mt = 0 THEN 1 ELSE 0 END) AS entregadas,
+            SUM(CASE WHEN fec_entr IS NULL     AND es_mt = 0 THEN 1 ELSE 0 END) AS pendientes,
+            COUNT(*) AS total
+        FROM facturas
+        WHERE bodega ~ '^[0-9]+$'
+          AND CAST(bodega AS INTEGER) BETWEEN 50 AND 70
+          {mes_filter}
+        GROUP BY bodega
+        ORDER BY CAST(bodega AS INTEGER)
+    """ if db.USING_PG else f"""
+        SELECT
+            bodega,
+            SUM(CASE WHEN fec_entr IS NOT NULL AND es_mt = 0 THEN 1 ELSE 0 END) AS entregadas,
+            SUM(CASE WHEN fec_entr IS NULL     AND es_mt = 0 THEN 1 ELSE 0 END) AS pendientes,
+            COUNT(*) AS total
+        FROM facturas
+        WHERE bodega GLOB '[0-9]*'
+          AND CAST(bodega AS INTEGER) BETWEEN 50 AND 70
+          {mes_filter}
+        GROUP BY bodega
+        ORDER BY CAST(bodega AS INTEGER)
+    """
+
+    rows = db.fetchall(conn, sql, params)
+    db.close(conn)
+    return jsonify(rows)
+
+
+# ════════════════════════════════════════════════════════════════
 # GPS
 # ════════════════════════════════════════════════════════════════
 @app.route('/api/gps')

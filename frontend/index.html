@@ -639,6 +639,7 @@ function getCondStats(clave) {
   };
 }
 let bodegasData = [];
+let bodegasVirtualesData = [];
 let mesActivo = (() => {
   const now = new Date();
   return now.toISOString().slice(0, 7);
@@ -825,11 +826,18 @@ async function loadBodegas() {
   } catch (_) {}
 }
 
+async function loadBodegasVirtuales() {
+  try {
+    const res = await api('GET', `/api/stats/bodegas-virtuales?mes=${mesActivo}`);
+    if (res.ok) bodegasVirtualesData = await res.json();
+  } catch (_) {}
+}
+
 async function loadAll() {
   showLoading('Cargando datos…');
   await Promise.all([loadConductores(), loadGps(), loadBodegas()]);
   await loadFacturas();
-  await loadStats();
+  await Promise.all([loadStats(), loadBodegasVirtuales()]);
   hideLoading();
 }
 
@@ -1253,6 +1261,15 @@ function renderResumen() {
       <div id="res-stack-chart"></div>
     </div>
 
+    <!-- Bodegas Virtuales -->
+    <div class="chart-wrap" style="margin-bottom:20px">
+      <div class="chart-label">Bodegas Virtuales (50–70)</div>
+      <div style="font-size:11px;color:var(--fg2);margin-bottom:12px">Entregadas vs Pendientes por bodega virtual · ${mesActivo}</div>
+      <div id="res-bodegas-virtuales">
+        <div style="color:var(--fg2);font-size:12px;text-align:center;padding:20px">Cargando...</div>
+      </div>
+    </div>
+
   `;
 
   // Gráfica Total vs A tiempo por conductor (barras lado a lado)
@@ -1366,6 +1383,57 @@ function renderResumen() {
 
   // Renderizar categorías globales usando todas las facturas
   renderStackChartEl(facturas, document.getElementById('res-stack-chart'));
+
+  // Bodegas virtuales
+  (function() {
+    const bvEl = document.getElementById('res-bodegas-virtuales');
+    if (!bvEl) return;
+    if (!bodegasVirtualesData || !bodegasVirtualesData.length) {
+      bvEl.innerHTML = '<div style="color:var(--fg2);font-size:12px;text-align:center;padding:20px">Sin datos de bodegas virtuales</div>';
+      return;
+    }
+    const totalEnt  = bodegasVirtualesData.reduce((s,r) => s + Number(r.entregadas||0), 0);
+    const totalPend = bodegasVirtualesData.reduce((s,r) => s + Number(r.pendientes||0), 0);
+    const totalAll  = totalEnt + totalPend;
+    const rows = bodegasVirtualesData.map(r => {
+      const ent  = Number(r.entregadas||0);
+      const pend = Number(r.pendientes||0);
+      const tot  = ent + pend;
+      const pct  = tot > 0 ? Math.round(ent / tot * 100) : 0;
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:7px 10px;font-weight:700;color:var(--accent)">Bodega ${r.bodega}</td>
+        <td style="padding:7px 10px;text-align:right">${tot}</td>
+        <td style="padding:7px 10px;text-align:right;color:#059669;font-weight:600">${ent}</td>
+        <td style="padding:7px 10px;text-align:right;color:#EF4444;font-weight:600">${pend}</td>
+        <td style="padding:7px 10px;min-width:120px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;background:var(--border);border-radius:4px;height:8px;overflow:hidden;position:relative">
+              <div style="width:${pct}%;height:100%;background:#059669;border-radius:4px"></div>
+            </div>
+            <span style="font-weight:700;color:${pct>=70?'#059669':pct>=40?'#F59E0B':'#EF4444'};min-width:32px;text-align:right">${pct}%</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+    bvEl.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="border-bottom:2px solid var(--border)">
+          <th style="text-align:left;padding:5px 10px;color:var(--fg2);font-weight:600">Bodega</th>
+          <th style="text-align:right;padding:5px 10px;color:var(--fg2);font-weight:600">Total</th>
+          <th style="text-align:right;padding:5px 10px;color:#059669;font-weight:600">Entregadas</th>
+          <th style="text-align:right;padding:5px 10px;color:#EF4444;font-weight:600">Pendientes</th>
+          <th style="padding:5px 10px;color:var(--fg2);font-weight:600">% Entregado</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr style="background:var(--surface);border-top:2px solid var(--border);font-weight:800">
+          <td style="padding:7px 10px">TOTAL</td>
+          <td style="padding:7px 10px;text-align:right">${totalAll}</td>
+          <td style="padding:7px 10px;text-align:right;color:#059669">${totalEnt}</td>
+          <td style="padding:7px 10px;text-align:right;color:#EF4444">${totalPend}</td>
+          <td style="padding:7px 10px;color:var(--fg2);font-size:11px">${totalAll>0?Math.round(totalEnt/totalAll*100):0}% entregado</td>
+        </tr></tfoot>
+      </table>`;
+  })();
 
   const grid = el.querySelector('#res-cards');
   grid.innerHTML = conductores.map(c => {

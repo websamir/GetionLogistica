@@ -125,7 +125,19 @@ def hash_pass(p):
 # ── Init (solo SQLite — en PG el schema se aplica con seed_supabase.sql) ──
 def init_db():
     if USING_PG:
-        return  # En producción el schema ya existe en Supabase
+        # Migraciones incrementales para producción
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    ALTER TABLE facturas ADD COLUMN IF NOT EXISTS bodega TEXT DEFAULT ''
+                """)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+        finally:
+            conn.close()
+        return
 
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = get_db()
@@ -167,6 +179,7 @@ def init_db():
         ciudad      TEXT,
         dpto        TEXT,
         placa       TEXT,
+        bodega      TEXT,
         valor       REAL,
         peso        REAL,
         fec_fact    TEXT,
@@ -372,6 +385,7 @@ def replace_facturas(cond_keys, rows_data):
         (
             r['cond_key'], r.get('num',''), r.get('tipo',''), r.get('tip_desc',''),
             r.get('cliente',''), r.get('ciudad',''), r.get('dpto',''), r.get('placa',''),
+            r.get('bodega',''),
             r.get('valor'), r.get('peso'),
             r.get('fec_fact'), r.get('fec_promesa'), r.get('fec_entr'),
             r.get('dif_dias'), r.get('dif_horas'),
@@ -381,9 +395,9 @@ def replace_facturas(cond_keys, rows_data):
     ]
     executemany(conn, f"""
         INSERT INTO facturas
-          (cond_key,num,tipo,tip_desc,cliente,ciudad,dpto,placa,valor,peso,
+          (cond_key,num,tipo,tip_desc,cliente,ciudad,dpto,placa,bodega,valor,peso,
            fec_fact,fec_promesa,fec_entr,dif_dias,dif_horas,es_mt)
-        VALUES ({ph(16)})
+        VALUES ({ph(17)})
     """, param_list)
     commit(conn)
     close(conn)
