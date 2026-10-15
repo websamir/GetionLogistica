@@ -967,7 +967,7 @@ function calcBonoJefatura(totalEnt) {
 
 function renderResumen() {
   const el = document.getElementById('page-resumen');
-  const allStats = conductores.map(c => getCondStats(c.clave));
+  const allStats = conductores.filter(c => c.clave !== 'SIN_ASIGNAR').map(c => getCondStats(c.clave));
   const totalEnt   = allStats.reduce((s, c) => s + (c.entregadas || 0), 0);
   const bj = calcBonoJefatura(totalEnt);
   const metaPct = Math.round(BONO_JEFE_META * 100);
@@ -1441,7 +1441,7 @@ function renderResumen() {
   })();
 
   const grid = el.querySelector('#res-cards');
-  grid.innerHTML = conductores.map(c => {
+  grid.innerHTML = conductores.filter(c => c.clave !== 'SIN_ASIGNAR').map(c => {
     const s = getCondStats(c.clave);
     const color = COND_COLORS[c.clave] || '#64748B';
     const bono = (s.bono_c || 0) + (s.bono_a || 0);
