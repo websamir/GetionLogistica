@@ -882,8 +882,8 @@ function buildApp() {
 
 function getPagesForRole(role) {
   const all = [
-    { id: 'admin',         label: 'Administración', icon: '⚙️' },
     { id: 'resumen',       label: 'Resumen',         icon: '📊' },
+    { id: 'admin',         label: 'Administración', icon: '⚙️' },
     { id: 'equipo',        label: 'Equipo',          icon: '👥' },
     { id: 'facturas-jefe', label: 'Facturas',        icon: '📄' },
     { id: 'gps',           label: 'GPS',             icon: '📍' },
@@ -892,7 +892,7 @@ function getPagesForRole(role) {
     { id: 'ayudante',      label: 'Mi Panel',        icon: '🏠' },
   ];
   const roleMap = {
-    admin:      ['admin','resumen','equipo','facturas-jefe','gps','pendientes'],
+    admin:      ['resumen','equipo','facturas-jefe','gps','pendientes','admin'],
     jefe:       ['resumen','equipo','facturas-jefe','gps','pendientes'],
     'aux-jefe': ['equipo','gps','pendientes'],
     conductor:  ['mi-panel'],
