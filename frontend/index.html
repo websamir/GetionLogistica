@@ -1032,7 +1032,7 @@ function renderResumen() {
     <div class="kpi-grid" style="margin-bottom:20px">
       <div class="kpi accent"><div class="kpi-label">Bodegas Virtuales (total)</div><div class="kpi-value">${fmtNum(bvTotal)}</div></div>
       <div class="kpi ok"><div class="kpi-label">Virtuales entregadas</div><div class="kpi-value">${fmtNum(bvEnt)}</div></div>
-      <div class="kpi danger"><div class="kpi-label">Virtuales tarde (&gt;5d)</div><div class="kpi-value">${fmtNum(bvTarde)}</div></div>
+      <div class="kpi danger"><div class="kpi-label">Virtuales entregadas tarde (&gt;5d)</div><div class="kpi-value">${fmtNum(bvTarde)}</div></div>
       <div class="kpi warn"><div class="kpi-label">Virtuales pendientes</div><div class="kpi-value">${fmtNum(bvPend)}</div></div>
       <div class="kpi"><div class="kpi-label">% Entregado virtual</div><div class="kpi-value">${bvTotal > 0 ? Math.round(bvEnt/bvTotal*100) : 0}%</div></div>
     </div>
