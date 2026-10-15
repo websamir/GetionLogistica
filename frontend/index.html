@@ -1019,7 +1019,7 @@ function renderResumen() {
 
     <!-- KPIs globales -->
     <div class="kpi-grid" style="margin-bottom:20px">
-      <div class="kpi accent"><div class="kpi-label">Conductores</div><div class="kpi-value">${conductores.length}</div></div>
+      <div class="kpi accent"><div class="kpi-label">Conductores</div><div class="kpi-value">${conductores.filter(c=>c.clave!=='SIN_ASIGNAR').length}</div></div>
       <div class="kpi"><div class="kpi-label">Pedidos entregados</div><div class="kpi-value">${fmtNum(totalEnt)}</div></div>
       <div class="kpi ok"><div class="kpi-label">A tiempo (≤5d)</div><div class="kpi-value">${fmtNum(totalATiempo)}</div></div>
       <div class="kpi danger"><div class="kpi-label">Tarde (&gt;5d)</div><div class="kpi-value">${fmtNum(Math.max(0,totalTarde))}</div></div>
@@ -1621,7 +1621,7 @@ function renderEquipo() {
     </div>
     <div class="table-wrap">
       <div class="table-header">
-        <span class="table-title">Conductores (${conductores.length})</span>
+        <span class="table-title">Conductores (${conductores.filter(c=>c.clave!=='SIN_ASIGNAR').length})</span>
         <input class="search-input" id="equipo-search" placeholder="Buscar…" oninput="filterEquipo()" style="width:180px">
       </div>
       <div class="table-scroller">
