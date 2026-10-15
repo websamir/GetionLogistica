@@ -262,6 +262,7 @@ def get_bodegas_virtuales():
             bodega,
             SUM(CASE WHEN fec_entr IS NOT NULL AND es_mt = 0 THEN 1 ELSE 0 END) AS entregadas,
             SUM(CASE WHEN fec_entr IS NULL     AND es_mt = 0 THEN 1 ELSE 0 END) AS pendientes,
+            SUM(CASE WHEN fec_entr IS NOT NULL AND es_mt = 0 AND dif_dias > 5 THEN 1 ELSE 0 END) AS tarde,
             COUNT(*) AS total
         FROM facturas
         WHERE bodega ~ '^[0-9]+$'
@@ -274,6 +275,7 @@ def get_bodegas_virtuales():
             bodega,
             SUM(CASE WHEN fec_entr IS NOT NULL AND es_mt = 0 THEN 1 ELSE 0 END) AS entregadas,
             SUM(CASE WHEN fec_entr IS NULL     AND es_mt = 0 THEN 1 ELSE 0 END) AS pendientes,
+            SUM(CASE WHEN fec_entr IS NOT NULL AND es_mt = 0 AND dif_dias > 5 THEN 1 ELSE 0 END) AS tarde,
             COUNT(*) AS total
         FROM facturas
         WHERE bodega GLOB '[0-9]*'
