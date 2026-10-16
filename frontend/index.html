@@ -2066,6 +2066,7 @@ function renderFacturasJefe() {
     <div class="pill-group" id="jf-pills">
       <button class="pill active" data-cond="all" onclick="jfSetCond('all')">Todos</button>
       ${condKeys.map(k => `<button class="pill" data-cond="${k}" onclick="jfSetCond('${k}')" style="color:${COND_COLORS[k]||'inherit'}">${k}</button>`).join('')}
+      <button class="pill" data-cond="__virtuales" onclick="jfSetCond('__virtuales')" style="color:#8B5CF6;border-color:#8B5CF6">🏭 Virtuales</button>
     </div>
 
     <div class="table-wrap">
@@ -2105,9 +2106,19 @@ function jfSetCond(cond) {
   jfFilter();
 }
 
+function isVirtualBodega(bodega) {
+  if (!bodega) return false;
+  const n = parseInt(bodega, 10);
+  return !isNaN(n) && n >= 50 && n <= 70;
+}
+
 function getJfRows() {
   let rows = [...facturas];
-  if (jfCond !== 'all') rows = rows.filter(f => f.cond_key === jfCond);
+  if (jfCond === '__virtuales') {
+    rows = rows.filter(f => isVirtualBodega(f.bodega));
+  } else if (jfCond !== 'all') {
+    rows = rows.filter(f => f.cond_key === jfCond);
+  }
   const q = (document.getElementById('jf-search')?.value || '').toLowerCase();
   const est = document.getElementById('jf-estado')?.value || '';
   if (q) rows = rows.filter(f =>
