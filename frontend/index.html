@@ -640,6 +640,7 @@ function getCondStats(clave) {
 }
 let bodegasData = [];
 let bodegasVirtualesData = [];
+let lastUploadFacturas = '';
 let mesActivo = (() => {
   const now = new Date();
   return now.toISOString().slice(0, 7);
@@ -833,9 +834,16 @@ async function loadBodegasVirtuales() {
   } catch (_) {}
 }
 
+async function loadConfig() {
+  try {
+    const res = await api('GET', '/api/config');
+    if (res.ok) { const d = await res.json(); lastUploadFacturas = d.last_upload_facturas || ''; }
+  } catch (_) {}
+}
+
 async function loadAll() {
   showLoading('Cargando datos…');
-  await Promise.all([loadConductores(), loadGps(), loadBodegas()]);
+  await Promise.all([loadConductores(), loadGps(), loadBodegas(), loadConfig()]);
   await loadFacturas();
   await Promise.all([loadStats(), loadBodegasVirtuales()]);
   hideLoading();
@@ -1014,7 +1022,7 @@ function renderResumen() {
   el.innerHTML = `
     <div class="section-header">
       <h2>Resumen General</h2>
-      <p>Vista consolidada del equipo de reparto · ${mesActivo}</p>
+      <p>Vista consolidada del equipo de reparto · ${mesActivo}${lastUploadFacturas ? ` <span style="color:var(--fg2);font-size:11px">· Último cargue: <strong>${lastUploadFacturas}</strong></span>` : ''}</p>
     </div>
 
     <!-- KPIs globales -->

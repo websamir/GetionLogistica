@@ -130,9 +130,13 @@ def init_db():
             conn = get_db()
             try:
                 with conn.cursor() as cur:
-                    cur.execute(
-                        "ALTER TABLE facturas ADD COLUMN IF NOT EXISTS bodega TEXT DEFAULT ''"
-                    )
+                    cur.execute("ALTER TABLE facturas ADD COLUMN IF NOT EXISTS bodega TEXT DEFAULT ''")
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS config (
+                            clave TEXT PRIMARY KEY,
+                            valor TEXT
+                        )
+                    """)
                 conn.commit()
             except Exception:
                 conn.rollback()
@@ -205,6 +209,10 @@ def init_db():
         sede  TEXT,
         ped   INTEGER DEFAULT 0,
         nt    INTEGER DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS config (
+        clave TEXT PRIMARY KEY,
+        valor TEXT
     );
     """)
 
@@ -379,6 +387,23 @@ def replace_conductores(rows_data):
     close(conn)
 
 
+def set_config(clave, valor):
+    conn = get_db()
+    if USING_PG:
+        execute(conn, "INSERT INTO config (clave,valor) VALUES (%s,%s) ON CONFLICT (clave) DO UPDATE SET valor=EXCLUDED.valor", (clave, valor))
+    else:
+        execute(conn, "INSERT OR REPLACE INTO config (clave,valor) VALUES (?,?)", (clave, valor))
+    commit(conn)
+    close(conn)
+
+
+def get_config(clave):
+    conn = get_db()
+    rows = fetchall(conn, _adapt_sql("SELECT valor FROM config WHERE clave=?"), (clave,))
+    close(conn)
+    return rows[0]['valor'] if rows else None
+
+
 def replace_facturas(cond_keys, rows_data):
     conn = get_db()
     if cond_keys:
@@ -404,6 +429,8 @@ def replace_facturas(cond_keys, rows_data):
     """, param_list)
     commit(conn)
     close(conn)
+    from datetime import datetime
+    set_config('last_upload_facturas', datetime.now().strftime('%Y-%m-%d %H:%M'))
 
 
 def replace_gps(rows_data):

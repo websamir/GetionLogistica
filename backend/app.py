@@ -291,6 +291,17 @@ def get_bodegas_virtuales():
 
 
 # ════════════════════════════════════════════════════════════════
+# CONFIG
+# ════════════════════════════════════════════════════════════════
+@app.route('/api/config')
+@jwt_required()
+def get_config():
+    return jsonify({
+        'last_upload_facturas': db.get_config('last_upload_facturas') or ''
+    })
+
+
+# ════════════════════════════════════════════════════════════════
 # GPS
 # ════════════════════════════════════════════════════════════════
 @app.route('/api/gps')
