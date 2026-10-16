@@ -1447,6 +1447,11 @@ function renderResumen() {
     const bono = (s.bono_c || 0) + (s.bono_a || 0);
     const bonoCls = bono > 0 ? 'ok' : bono < 0 ? 'danger' : '';
     const myFacts = facturas.filter(f => f.cond_key === c.clave);
+    const vFacts = myFacts.filter(f => isVirtualBodega(f.bodega) && !tipoEsMT(f.tipo));
+    const vEnt   = vFacts.filter(f => f.fec_entr).length;
+    const vTarde = vFacts.filter(f => { const d = getDias(f); return f.fec_entr && d !== null && d > 5; }).length;
+    const vATiempo = vEnt - vTarde;
+    const vPend  = vFacts.filter(f => !f.fec_entr).length;
     return `
       <div class="conductor-card" style="cursor:pointer" onclick="">
         <div class="conductor-card-header">
@@ -1484,6 +1489,24 @@ function renderResumen() {
             <div style="font-size:10px;color:var(--fg2)">Bono ayudante</div>
             <div style="font-size:14px;font-weight:700;color:var(--fg)">${fmtCurrency(s.bono_a||0)}</div>
           </div>
+          ${vFacts.length > 0 ? `
+          <div style="grid-column:1/-1;border-top:1px dashed #8B5CF655;padding-top:6px;margin-top:2px">
+            <div style="font-size:10px;font-weight:700;color:#8B5CF6;margin-bottom:4px">🏭 Virtuales (${vFacts.length})</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+              <div style="background:#8B5CF611;border-radius:5px;padding:4px 6px;border:1px solid #8B5CF633;text-align:center">
+                <div style="font-size:9px;color:#8B5CF6">A tiempo</div>
+                <div style="font-size:15px;font-weight:800;color:#059669">${vATiempo}</div>
+              </div>
+              <div style="background:#8B5CF611;border-radius:5px;padding:4px 6px;border:1px solid #8B5CF633;text-align:center">
+                <div style="font-size:9px;color:#8B5CF6">Tarde</div>
+                <div style="font-size:15px;font-weight:800;color:${vTarde>0?'#EF4444':'var(--fg)'}">${vTarde}</div>
+              </div>
+              <div style="background:#8B5CF611;border-radius:5px;padding:4px 6px;border:1px solid #8B5CF633;text-align:center">
+                <div style="font-size:9px;color:#8B5CF6">Pendientes</div>
+                <div style="font-size:15px;font-weight:800;color:${vPend>0?'#F59E0B':'var(--fg)'}">${vPend}</div>
+              </div>
+            </div>
+          </div>` : ''}
         </div>
       </div>
     `;
