@@ -84,6 +84,53 @@ def tipo_es_mt(tipo):
     return bool(re.match(r'^NT', str(tipo or '').strip(), re.IGNORECASE))
 
 
+# ── Festivos Colombia (actualizables anualmente) ───────────────
+_FESTIVOS_CO = {
+    date(d, m, a)
+    for d, m, a in [
+        # 2025
+        (1,1,2025),(6,1,2025),(24,3,2025),(17,4,2025),(18,4,2025),
+        (1,5,2025),(2,6,2025),(23,6,2025),(30,6,2025),(20,7,2025),
+        (7,8,2025),(18,8,2025),(13,10,2025),(3,11,2025),(17,11,2025),
+        (8,12,2025),(25,12,2025),
+        # 2026
+        (1,1,2026),(12,1,2026),(23,3,2026),(2,4,2026),(3,4,2026),
+        (1,5,2026),(18,5,2026),(8,6,2026),(15,6,2026),(29,6,2026),
+        (20,7,2026),(7,8,2026),(17,8,2026),(12,10,2026),(2,11,2026),
+        (16,11,2026),(8,12,2026),(25,12,2026),
+        # 2027
+        (1,1,2027),(11,1,2027),(22,3,2027),(25,3,2027),(26,3,2027),
+        (1,5,2027),(17,5,2027),(7,6,2027),(14,6,2027),(5,7,2027),
+        (20,7,2027),(7,8,2027),(16,8,2027),(18,10,2027),(1,11,2027),
+        (15,11,2027),(8,12,2027),(25,12,2027),
+    ]
+}
+
+
+def dias_habiles(fecha_inicio_str, fecha_fin_str):
+    """
+    Días hábiles entre dos fechas (lun–sáb, sin festivos colombianos).
+    Positivo = entrega tarde, negativo = entrega anticipada.
+    """
+    try:
+        from datetime import timedelta
+        fi = date.fromisoformat(fecha_inicio_str[:10])
+        ff = date.fromisoformat(fecha_fin_str[:10])
+        if fi == ff:
+            return 0
+        sign = 1 if ff > fi else -1
+        start, end = (fi, ff) if sign == 1 else (ff, fi)
+        habiles = 0
+        cur = start + timedelta(days=1)
+        while cur <= end:
+            if cur.weekday() != 6 and cur not in _FESTIVOS_CO:  # 6=domingo
+                habiles += 1
+            cur += timedelta(days=1)
+        return sign * habiles
+    except Exception:
+        return None
+
+
 def parse_excel(filepath, tipo):
     wb = load_workbook(filepath, read_only=True, data_only=True)
 
@@ -168,9 +215,11 @@ def _parse_facturas(data_rows):
         fec_promesa = fmt_excel_date(col(r, 'fecpromesaentrega', 'fec_promesa_entrega', 'fechapromesa'))
         fec_entr    = fmt_excel_date(col(r, 'fecentreganegocio', 'fec_entrega_logistica', 'fechaentrega', 'fecha_entrega'))
 
-        # Diferencia días
+        # Diferencia días — recalcular en días hábiles si hay ambas fechas
         dif_raw  = col(r, 'diferenciafechadias', 'diferencia_fecha_dias', 'difdias')
         dif_dias = float(dif_raw) if dif_raw not in (None, '', 'None') else None
+        if fec_promesa and fec_entr:
+            dif_dias = dias_habiles(fec_promesa, fec_entr)
         dif_h_r  = col(r, 'diferenciafechahoras', 'diferencia_fecha_horas')
         dif_horas= float(dif_h_r) if dif_h_r not in (None, '', 'None') else None
 
