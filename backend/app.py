@@ -248,10 +248,10 @@ def get_bodegas_virtuales():
 
     if mes:
         if db.USING_PG:
-            mes_filter = "AND (to_char(fec_entr,'YYYY-MM') = %s OR fec_entr IS NULL)"
+            mes_filter = "AND to_char(fec_fact,'YYYY-MM') = %s"
             params = [mes]
         else:
-            mes_filter = "AND (fec_entr LIKE ? OR fec_entr IS NULL)"
+            mes_filter = "AND fec_fact LIKE ?"
             params = [mes + '%']
     else:
         mes_filter = ""
