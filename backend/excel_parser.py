@@ -86,7 +86,7 @@ def tipo_es_mt(tipo):
 
 # ── Festivos Colombia (actualizables anualmente) ───────────────
 _FESTIVOS_CO = {
-    date(d, m, a)
+    date(a, m, d)
     for d, m, a in [
         # 2025
         (1,1,2025),(6,1,2025),(24,3,2025),(17,4,2025),(18,4,2025),
