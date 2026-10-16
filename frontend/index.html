@@ -2071,6 +2071,7 @@ function renderAyudante() {
 const JFACT_SIZE = 12;
 let jfPage = 0;
 let jfCond = 'all';
+let jfVirtualCond = 'all';
 let jfSearch = '';
 
 function renderFacturasJefe() {
@@ -2106,6 +2107,10 @@ function renderFacturasJefe() {
         <select class="form-select" id="jf-mes" onchange="jfChangeMes(this.value)">
           ${meses.map(m => `<option value="${m}" ${m===mesActivo?'selected':''}>${m}</option>`).join('')}
         </select>
+        <select class="form-select" id="jf-virtual-cond" onchange="jfVirtualCondChange(this.value)" style="display:none;color:#8B5CF6;border-color:#8B5CF655">
+          <option value="all">Todos los conductores</option>
+          ${conductores.filter(c=>c.clave!=='SIN_ASIGNAR').map(c=>`<option value="${c.clave}">${c.nombre||c.clave}</option>`).join('')}
+        </select>
         <input class="search-input" id="jf-search" placeholder="Buscar…" oninput="jfFilter()" style="width:160px">
         <select class="form-select" id="jf-estado" onchange="jfFilter()">
           <option value="">Todos</option>
@@ -2132,8 +2137,17 @@ function renderFacturasJefe() {
 
 function jfSetCond(cond) {
   jfCond = cond;
+  jfVirtualCond = 'all';
   jfPage = 0;
   document.querySelectorAll('#jf-pills .pill').forEach(p => p.classList.toggle('active', p.dataset.cond === cond));
+  const sel = document.getElementById('jf-virtual-cond');
+  if (sel) { sel.style.display = cond === '__virtuales' ? '' : 'none'; sel.value = 'all'; }
+  jfFilter();
+}
+
+function jfVirtualCondChange(val) {
+  jfVirtualCond = val;
+  jfPage = 0;
   jfFilter();
 }
 
@@ -2147,6 +2161,7 @@ function getJfRows() {
   let rows = [...facturas];
   if (jfCond === '__virtuales') {
     rows = rows.filter(f => isVirtualBodega(f.bodega));
+    if (jfVirtualCond !== 'all') rows = rows.filter(f => f.cond_key === jfVirtualCond);
   } else if (jfCond !== 'all') {
     rows = rows.filter(f => f.cond_key === jfCond);
   }
