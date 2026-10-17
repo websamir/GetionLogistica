@@ -1771,13 +1771,13 @@ function renderMiPanel() {
     <!-- Como voy + Bonificacion total -->
     ${(() => {
       const metaPct = 85;
-      const pct = s.pct_tiempo || 0;
+      const pct = s.a_tiempo || 0;                          // a_tiempo en getCondStats = pct_tiempo (%)
       const alcanza = pct >= metaPct;
       const bonoBase = s.bono_c || 0;
       const bonoExtra = alcanza ? 350000 : 0;
       const bonoTotal = bonoBase + bonoExtra;
       const entregadas = s.entregadas || 0;
-      const aTiempoN = s.a_tiempo || 0;
+      const aTiempoN = stats[session.cond_key]?.a_tiempo || 0;  // conteo real
       const tardeN = Math.max(0, entregadas - aTiempoN);
       const pendN = s.pendientes || 0;
       const barColor = pct >= metaPct ? '#059669' : pct >= 70 ? '#D97706' : '#EF4444';

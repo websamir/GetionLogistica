@@ -234,7 +234,7 @@ def _seed_usuarios(conn):
         ('admin',          hash_pass('admin2026'),  'admin',     None,       'Administrador',       'Administrador del Sistema',  'Barranquilla', '300 000 0000'),
         ('jefe.logistica', hash_pass('jefe2026'),   'jefe',      None,       'Frank Hernández',     'Jefe de Logística',          'Barranquilla', '300 000 0001'),
         ('landero',        hash_pass('aux2026'),    'aux-jefe',  None,       'Landero Pérez',       'Auxiliar de Jefatura',       'Barranquilla', '300 000 0002'),
-        ('roa.julio',      hash_pass('roa2026'),    'conductor', 'ROA',      'Julio Armando Roa',   'Conductor · WGX062',         'Barranquilla', '301 111 0001'),
+        ('roa.julio',      hash_pass('roa2026'),    'conductor', 'ROA',      'Julio Roa',           'Conductor · WGX-062',        'Barranquilla', '301 111 0001'),
         ('martinez.luis',  hash_pass('mart2026'),   'conductor', 'MARTINEZ', 'Luis Martínez',       'Conductor · WGX060',         'Barranquilla', '301 111 0002'),
         ('marin.jose',     hash_pass('marin2026'),  'conductor', 'MARIN',    'José Marín',          'Conductor · TDU-499',        'Barranquilla', '301 111 0003'),
         ('mendoza.luis',   hash_pass('mend2026'),   'conductor', 'MENDOZA',  'Luis Mendoza',        'Conductor · WGX061',         'Barranquilla', '301 111 0004'),
