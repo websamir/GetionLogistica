@@ -333,6 +333,13 @@ def get_conductores():
     return rows
 
 
+def update_conductor_nombre(clave, nombre):
+    conn = get_db()
+    execute(conn, _adapt_sql("UPDATE conductores SET nombre=? WHERE clave=?"), (nombre, clave))
+    commit(conn)
+    close(conn)
+
+
 def get_facturas(cond_key=None, mes=None):
     conn = get_db()
     sql  = "SELECT * FROM facturas WHERE 1=1"

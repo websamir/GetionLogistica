@@ -125,6 +125,18 @@ def get_conductores():
     return jsonify(db.get_conductores())
 
 
+@app.route('/api/conductores/<string:clave>', methods=['PATCH'])
+@jwt_required()
+def patch_conductor(clave):
+    err = require_roles('admin')
+    if err:
+        return err
+    data = request.get_json() or {}
+    if 'nombre' in data:
+        db.update_conductor_nombre(clave, str(data['nombre']).strip())
+    return jsonify(ok=True)
+
+
 # ════════════════════════════════════════════════════════════════
 # STATS CALCULADAS DESDE FACTURAS (por mes)
 # ════════════════════════════════════════════════════════════════
