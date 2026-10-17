@@ -293,6 +293,39 @@ def get_usuario(usuario):
     return row
 
 
+def upsert_usuario(usuario, password_hash, role, cond_key, nombre, cargo, sede, celular):
+    conn = get_db()
+    if USING_PG:
+        execute(conn, """
+            INSERT INTO usuarios (usuario,password,role,cond_key,nombre,cargo,sede,celular)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (usuario) DO UPDATE SET
+                password=EXCLUDED.password, role=EXCLUDED.role, cond_key=EXCLUDED.cond_key,
+                nombre=EXCLUDED.nombre, cargo=EXCLUDED.cargo, sede=EXCLUDED.sede, celular=EXCLUDED.celular
+        """, (usuario, password_hash, role, cond_key, nombre, cargo, sede, celular))
+    else:
+        execute(conn, """
+            INSERT OR REPLACE INTO usuarios (usuario,password,role,cond_key,nombre,cargo,sede,celular)
+            VALUES (?,?,?,?,?,?,?,?)
+        """, (usuario, password_hash, role, cond_key, nombre, cargo, sede, celular))
+    commit(conn)
+    close(conn)
+
+
+def get_usuarios():
+    conn = get_db()
+    rows = fetchall(conn, "SELECT usuario,role,cond_key,nombre,cargo,sede,celular FROM usuarios ORDER BY role,usuario")
+    close(conn)
+    return rows
+
+
+def delete_usuario(usuario):
+    conn = get_db()
+    execute(conn, _adapt_sql("DELETE FROM usuarios WHERE usuario=?"), (usuario,))
+    commit(conn)
+    close(conn)
+
+
 def get_conductores():
     conn = get_db()
     rows = fetchall(conn, "SELECT * FROM conductores ORDER BY clave")

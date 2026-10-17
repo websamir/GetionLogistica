@@ -291,6 +291,54 @@ def get_bodegas_virtuales():
 
 
 # ════════════════════════════════════════════════════════════════
+# ADMIN — USUARIOS
+# ════════════════════════════════════════════════════════════════
+@app.route('/api/admin/usuarios', methods=['GET'])
+@jwt_required()
+def list_usuarios():
+    err = require_roles('admin')
+    if err:
+        return err
+    return jsonify(db.get_usuarios())
+
+
+@app.route('/api/admin/usuarios', methods=['POST'])
+@jwt_required()
+def create_usuario():
+    err = require_roles('admin')
+    if err:
+        return err
+    data = request.get_json() or {}
+    usuario  = str(data.get('usuario', '')).strip().lower()
+    password = str(data.get('password', '')).strip()
+    role     = str(data.get('role', 'conductor')).strip()
+    cond_key = data.get('cond_key') or None
+    nombre   = str(data.get('nombre', '')).strip()
+    cargo    = str(data.get('cargo', '')).strip()
+    sede     = str(data.get('sede', 'Barranquilla')).strip()
+    celular  = str(data.get('celular', '')).strip()
+
+    if not usuario or not password:
+        return jsonify(error='usuario y password requeridos'), 400
+
+    db.upsert_usuario(usuario, hashlib.sha256(password.encode()).hexdigest(),
+                      role, cond_key, nombre, cargo, sede, celular)
+    return jsonify(ok=True, usuario=usuario)
+
+
+@app.route('/api/admin/usuarios/<string:usuario>', methods=['DELETE'])
+@jwt_required()
+def remove_usuario(usuario):
+    err = require_roles('admin')
+    if err:
+        return err
+    if usuario == 'admin':
+        return jsonify(error='No se puede eliminar el admin'), 400
+    db.delete_usuario(usuario)
+    return jsonify(ok=True)
+
+
+# ════════════════════════════════════════════════════════════════
 # CONFIG
 # ════════════════════════════════════════════════════════════════
 @app.route('/api/config')
