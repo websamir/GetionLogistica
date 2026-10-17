@@ -1014,6 +1014,8 @@ function renderResumen() {
     </tr>`;
   }).join('');
 
+  const totalNT = Object.values(stats).reduce((s, v) => s + (v.notas_traslado || 0), 0);
+
   const bvTotal = bodegasVirtualesData.reduce((s,r) => s + Number(r.total||0), 0);
   const bvEnt   = bodegasVirtualesData.reduce((s,r) => s + Number(r.entregadas||0), 0);
   const bvPend  = bodegasVirtualesData.reduce((s,r) => s + Number(r.pendientes||0), 0);
@@ -1032,6 +1034,7 @@ function renderResumen() {
       <div class="kpi ok"><div class="kpi-label">A tiempo (≤5d)</div><div class="kpi-value">${fmtNum(totalATiempo)}</div></div>
       <div class="kpi danger"><div class="kpi-label">Tarde (&gt;5d)</div><div class="kpi-value">${fmtNum(Math.max(0,totalTarde))}</div></div>
       <div class="kpi warn"><div class="kpi-label">Pendientes</div><div class="kpi-value">${fmtNum(totalPend)}</div></div>
+      <div class="kpi"><div class="kpi-label">NT entregadas</div><div class="kpi-value">${fmtNum(totalNT)}</div></div>
       <div class="kpi accent"><div class="kpi-label">Peso total (kg)</div><div class="kpi-value">${Math.round(totalPeso).toLocaleString('es-CO')}</div></div>
       <div class="kpi ${totalBono >= 0 ? 'ok' : 'danger'}"><div class="kpi-label">Bono Neto Equipo</div><div class="kpi-value">${fmtCurrency(totalBono)}</div></div>
     </div>
