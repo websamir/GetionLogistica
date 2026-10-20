@@ -1800,7 +1800,7 @@ function renderMiPanel() {
               <span>0%</span><span style="color:${barColor};font-weight:700">Meta ${metaPct}%</span><span>100%</span>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center">
             <div style="background:var(--bg2);border-radius:8px;padding:10px 4px">
               <div style="font-size:20px;font-weight:800;color:#059669">${aTiempoN}</div>
               <div style="font-size:10px;color:var(--fg2)">A tiempo</div>
@@ -1808,10 +1808,6 @@ function renderMiPanel() {
             <div style="background:var(--bg2);border-radius:8px;padding:10px 4px">
               <div style="font-size:20px;font-weight:800;color:#EF4444">${tardeN}</div>
               <div style="font-size:10px;color:var(--fg2)">Tarde</div>
-            </div>
-            <div style="background:var(--bg2);border-radius:8px;padding:10px 4px">
-              <div style="font-size:20px;font-weight:800;color:#D97706">${pendN}</div>
-              <div style="font-size:10px;color:var(--fg2)">Pendientes</div>
             </div>
           </div>
           ${alcanza ? `<div style="margin-top:10px;background:#d1fae5;border-radius:8px;padding:8px 12px;font-size:12px;color:#065f46;font-weight:600">🏆 Alcanzas la meta — bono extra +${fmtCurrency(350000)}</div>` : `<div style="margin-top:10px;background:var(--bg2);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--fg2)">Faltan <strong>${metaPct - pct}%</strong> para el bono extra de +${fmtCurrency(350000)}</div>`}
@@ -2071,8 +2067,6 @@ function renderMiPanelSummary(rows) {
       <div class="sum-box"><div class="sum-label">Total</div><div class="sum-value">${total}</div></div>
       <div class="sum-box"><div class="sum-label">A Tiempo</div><div class="sum-value ok">${aTiempo}</div></div>
       <div class="sum-box"><div class="sum-label">Tarde</div><div class="sum-value danger">${tarde}</div></div>
-      <div class="sum-box"><div class="sum-label">Pendientes</div><div class="sum-value warn">${pend}</div></div>
-      <div class="sum-box"><div class="sum-label">NTs</div><div class="sum-value">${nts}</div></div>
       <div class="sum-box"><div class="sum-label">Bono Neto</div><div class="sum-value ${bonoNeto >= 0 ? 'ok' : 'danger'}">${fmtCurrency(bonoNeto)}</div></div>
     </div>
   `;
