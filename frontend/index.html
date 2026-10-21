@@ -1025,6 +1025,9 @@ function renderResumen() {
     <div class="section-header">
       <h2>Resumen General</h2>
       <p>Vista consolidada del equipo de reparto · ${mesActivo}${lastUploadFacturas ? ` <span style="color:var(--fg2);font-size:11px">· Último cargue: <strong>${lastUploadFacturas}</strong></span>` : ''}</p>
+      ${session.role === 'admin' ? `<select class="form-select" style="margin-top:8px;width:auto" onchange="resumenChangeMes(this.value)">
+        ${meses.map(m => `<option value="${m}" ${m===mesActivo?'selected':''}>${m}</option>`).join('')}
+      </select>` : ''}
     </div>
 
     <!-- KPIs globales -->
@@ -2346,6 +2349,15 @@ async function jfChangeMes(mes) {
   await loadFacturas();
   hideLoading();
   renderFacturasJefe();
+}
+
+async function resumenChangeMes(mes) {
+  mesActivo = mes;
+  showLoading('Cargando resumen…');
+  await loadFacturas();
+  await Promise.all([loadStats(), loadBodegasVirtuales()]);
+  hideLoading();
+  renderResumen();
 }
 
 /* ═══════════════════════════════════════════════════════════════
