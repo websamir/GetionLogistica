@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestión Logística — INVESAKK SAS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ── CSS TOKENS ─────────────────────────────────────────────── */
 :root {
@@ -2272,6 +2273,7 @@ function renderFacturasJefe() {
           <option value="tarde">Tarde</option>
           <option value="pend">Pendiente</option>
         </select>
+        <button class="form-select" onclick="exportarFacturasExcel()" style="cursor:pointer;background:var(--ok);color:#fff;border-color:var(--ok);font-weight:600;padding:6px 14px">⬇ Excel</button>
       </div>
       <div class="table-scroller">
         <table>
@@ -2448,6 +2450,58 @@ function renderJfTable(rows) {
 function jfGoPage(p) {
   jfPage = p;
   renderJfTable(getJfRows());
+}
+
+function exportarFacturasExcel() {
+  const rows = getJfRows();
+  const data = rows.map(f => {
+    const dias = getDias(f);
+    const esMT = tipoEsMT(f.tipo);
+    const bono = calcBono(dias, esMT);
+    const cat  = getCategoria(dias, esMT, f.fec_entr);
+    return {
+      'Conductor':    f.cond_key || '',
+      'Número':       f.num || '',
+      'Tipo':         f.tipo || '',
+      'Cliente':      f.cliente || '',
+      'Ciudad':       f.ciudad || '',
+      'Dpto':         f.dpto || '',
+      'Bodega':       f.bodega || '',
+      'F. Factura':   f.fec_fact || '',
+      'F. Promesa':   f.fec_promesa || '',
+      'F. Entrega':   f.fec_entr || '',
+      'Días hábiles': dias !== null ? dias : '',
+      'Categoría':    cat.label,
+      'Valor':        f.valor || 0,
+      'Peso (kg)':    f.peso || 0,
+      'Bono conductor': esMT ? 0 : bono,
+      'Bono ayudante':  esMT ? 0 : Math.round(bono / 2),
+    };
+  });
+
+  // Hoja de desglose
+  const CATS = [
+    { label: 'Mismo día',         test: (d,mt,fe) => fe && !mt && d <= 0,            unit:  6000 },
+    { label: '1 día',             test: (d,mt,fe) => fe && !mt && d === 1,            unit:  6000 },
+    { label: '2 días',            test: (d,mt,fe) => fe && !mt && d === 2,            unit:  5000 },
+    { label: '3 – 5 días',        test: (d,mt,fe) => fe && !mt && d >= 3 && d <= 5,   unit:  4000 },
+    { label: 'Demora leve 6–10d', test: (d,mt,fe) => fe && !mt && d >= 6 && d <= 10,  unit:  -400 },
+    { label: 'Demora media 11–20d',test: (d,mt,fe) => fe && !mt && d >= 11 && d <= 20, unit:  -800 },
+    { label: 'Demora alta >20d',  test: (d,mt,fe) => fe && !mt && d > 20,             unit: -2000 },
+    { label: 'NT (traslados)',    test: (d,mt,fe) => mt,                               unit:     0 },
+    { label: 'Pendientes',        test: (d,mt,fe) => !fe && !mt,                       unit:     0 },
+  ];
+  const desglose = CATS.map(c => {
+    const subset = rows.filter(f => { const d = getDias(f); return c.test(d, tipoEsMT(f.tipo), f.fec_entr); });
+    const subtotal = subset.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
+    return { 'Categoría': c.label, 'Bono unitario': c.unit, 'Facturas': subset.length, 'Subtotal bono': subtotal };
+  }).filter(c => c['Facturas'] > 0);
+  desglose.push({ 'Categoría': 'TOTAL', 'Bono unitario': '', 'Facturas': rows.length, 'Subtotal bono': rows.reduce((s,f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0) });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Facturas');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(desglose), 'Desglose comisiones');
+  XLSX.writeFile(wb, `Facturas_${mesActivo}_${jfCond === 'all' ? 'Todos' : jfCond}.xlsx`);
 }
 
 async function jfChangeMes(mes) {
