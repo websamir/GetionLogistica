@@ -2285,6 +2285,7 @@ function renderFacturasJefe() {
       </div>
       <div class="table-pagination" id="jf-pag"></div>
     </div>
+    <div id="jf-totalizador"></div>
   `;
   jfFilter();
 }
@@ -2339,9 +2340,22 @@ function jfFilter() {
   renderJfTable(rows);
 }
 
+function getCategoria(dias, esMT, fec_entr) {
+  if (!fec_entr)     return { label: 'Pendiente',      cls: 'chip-warn',    color: '#F59E0B' };
+  if (esMT)          return { label: 'NT',              cls: 'chip-neutral', color: '#64748B' };
+  if (dias <= 0)     return { label: 'Mismo día',       cls: 'chip-ok',      color: '#059669' };
+  if (dias <= 1)     return { label: '1 día',           cls: 'chip-ok',      color: '#059669' };
+  if (dias <= 2)     return { label: '2 días',          cls: 'chip-ok',      color: '#10B981' };
+  if (dias <= 5)     return { label: '≤ 5 días',        cls: 'chip-ok',      color: '#34D399' };
+  if (dias <= 10)    return { label: 'Demora leve',     cls: 'chip-danger',  color: '#F97316' };
+  if (dias <= 20)    return { label: 'Demora media',    cls: 'chip-danger',  color: '#EF4444' };
+  return             { label: 'Demora alta',            cls: 'chip-danger',  color: '#991B1B' };
+}
+
 function renderJfTable(rows) {
   const tbody = document.getElementById('jf-tbody');
-  const pag = document.getElementById('jf-pag');
+  const pag   = document.getElementById('jf-pag');
+  const tot   = document.getElementById('jf-totalizador');
   if (!tbody) return;
   const total = rows.length;
   const pages = Math.ceil(total / JFACT_SIZE) || 1;
@@ -2349,18 +2363,12 @@ function renderJfTable(rows) {
   const slice = rows.slice(jfPage * JFACT_SIZE, (jfPage + 1) * JFACT_SIZE);
 
   tbody.innerHTML = slice.map(f => {
-    const dias = getDias(f);
-    const esMT = tipoEsMT(f.tipo);
-    const bono = calcBono(dias, esMT);
+    const dias  = getDias(f);
+    const esMT  = tipoEsMT(f.tipo);
+    const bono  = calcBono(dias, esMT);
     const color = COND_COLORS[f.cond_key] || '#64748B';
     const bonoCls = bono > 0 ? 'chip-ok' : bono < 0 ? 'chip-danger' : 'chip-neutral';
-    let estadoChip = '';
-    if (!f.fec_entr) estadoChip = `<span class="chip chip-warn">Pendiente</span>`;
-    else if (esMT) estadoChip = `<span class="chip chip-neutral">MT</span>`;
-    else if (dias <= 0) estadoChip = `<span class="chip chip-ok">D0</span>`;
-    else if (dias <= 5) estadoChip = `<span class="chip chip-ok">A tiempo</span>`;
-    else estadoChip = `<span class="chip chip-danger">Tarde</span>`;
-
+    const cat   = getCategoria(dias, esMT, f.fec_entr);
     return `<tr>
       <td><span style="color:${color};font-weight:700;font-size:12px">${f.cond_key || '—'}</span></td>
       <td><code style="font-size:11px">${f.num || '—'}</code></td>
@@ -2372,7 +2380,7 @@ function renderJfTable(rows) {
       <td style="font-size:11px;color:var(--fg2)">${fmtDate(f.fec_entr)}</td>
       <td style="text-align:center;font-size:12px">${dias !== null ? dias : '—'}</td>
       <td style="font-size:12px">${fmtCurrency(f.valor)}</td>
-      <td>${estadoChip}</td>
+      <td><span class="chip ${cat.cls}" style="font-size:10px">${cat.label}</span></td>
       <td><span class="chip ${bonoCls}">${esMT ? '—' : fmtCurrency(bono)}</span></td>
     </tr>`;
   }).join('') || '<tr><td colspan="12" style="text-align:center;color:var(--fg2);padding:24px">Sin facturas</td></tr>';
@@ -2382,6 +2390,59 @@ function renderJfTable(rows) {
     <span class="pag-info">Página ${jfPage + 1} de ${pages} · ${total} registros</span>
     <button class="pag-btn" onclick="jfGoPage(${jfPage + 1})" ${jfPage >= pages - 1 ? 'disabled' : ''}>Sig. →</button>
   `;
+
+  // Totalizador detallado (sobre todos los rows filtrados, no solo la página)
+  if (tot) {
+    const CATS = [
+      { key: 'd0',   label: 'Mismo día',    test: (d,mt,fe) => fe && !mt && d <= 0 },
+      { key: 'd1',   label: '1 día',        test: (d,mt,fe) => fe && !mt && d === 1 },
+      { key: 'd2',   label: '2 días',       test: (d,mt,fe) => fe && !mt && d === 2 },
+      { key: 'd5',   label: '3 – 5 días',   test: (d,mt,fe) => fe && !mt && d >= 3 && d <= 5 },
+      { key: 'dl',   label: 'Demora leve (6–10d)',  test: (d,mt,fe) => fe && !mt && d >= 6  && d <= 10 },
+      { key: 'dm',   label: 'Demora media (11–20d)', test: (d,mt,fe) => fe && !mt && d >= 11 && d <= 20 },
+      { key: 'da',   label: 'Demora alta (>20d)',    test: (d,mt,fe) => fe && !mt && d > 20 },
+      { key: 'nt',   label: 'NT (traslados)', test: (d,mt,fe) => mt },
+      { key: 'pend', label: 'Pendientes',    test: (d,mt,fe) => !fe && !mt },
+    ];
+    const summary = CATS.map(c => {
+      const subset = rows.filter(f => { const d = getDias(f); const mt = tipoEsMT(f.tipo); return c.test(d, mt, f.fec_entr); });
+      const bonoSum = subset.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
+      return { ...c, count: subset.length, bono: bonoSum };
+    }).filter(c => c.count > 0);
+
+    const bonoTotal = rows.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
+    const colorBono = v => v > 0 ? '#059669' : v < 0 ? '#EF4444' : 'var(--fg2)';
+
+    tot.innerHTML = `
+      <div style="margin-top:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);font-weight:700;font-size:13px;color:var(--fg)">
+          Desglose de comisiones — ${total} facturas filtradas
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--surface)">
+            <th style="text-align:left;padding:7px 14px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase">Categoría</th>
+            <th style="text-align:right;padding:7px 14px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase">Facturas</th>
+            <th style="text-align:right;padding:7px 14px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase">Bono unitario</th>
+            <th style="text-align:right;padding:7px 14px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase">Subtotal</th>
+          </tr></thead>
+          <tbody>
+            ${summary.map(c => {
+              const unit = c.count > 0 ? Math.round(c.bono / c.count) : 0;
+              return `<tr style="border-top:1px solid var(--border)">
+                <td style="padding:8px 14px;font-weight:600">${c.label}</td>
+                <td style="padding:8px 14px;text-align:right;color:var(--fg2)">${c.count}</td>
+                <td style="padding:8px 14px;text-align:right;color:${colorBono(unit)}">${c.key==='nt'||c.key==='pend' ? '—' : fmtCurrency(unit)}</td>
+                <td style="padding:8px 14px;text-align:right;font-weight:700;color:${colorBono(c.bono)}">${fmtCurrency(c.bono)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+          <tfoot><tr style="background:var(--bg2);border-top:2px solid var(--border)">
+            <td style="padding:10px 14px;font-weight:800;font-size:13px" colspan="3">BONO NETO TOTAL</td>
+            <td style="padding:10px 14px;text-align:right;font-weight:900;font-size:15px;color:${colorBono(bonoTotal)}">${fmtCurrency(bonoTotal)}</td>
+          </tr></tfoot>
+        </table>
+      </div>`;
+  }
 }
 
 function jfGoPage(p) {
