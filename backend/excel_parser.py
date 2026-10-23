@@ -211,7 +211,7 @@ def _parse_facturas(data_rows):
         es_mt    = tipo_es_mt(tipo) or bool(re.match(r'^si$', str(col(r, 'esnt', 'nt') or ''), re.I))
 
         # Fechas
-        fec_fact    = fmt_excel_date(col(r, 'fecfactura', 'fec_Factura', 'fechafactura', 'fecha_factura', 'fecha_hora', 'fechahora', 'fecha'))
+        fec_fact    = fmt_excel_date(col(r, 'fecha', 'fecfactura', 'fechafactura', 'fecha_factura', 'fecha_hora', 'fechahora'))
         fec_promesa = fmt_excel_date(col(r, 'fecpromesaentrega', 'fec_promesa_entrega', 'fechapromesa'))
         fec_entr    = fmt_excel_date(col(r, 'fecentreganegocio', 'fec_entrega_logistica', 'fechaentrega', 'fecha_entrega'))
 
