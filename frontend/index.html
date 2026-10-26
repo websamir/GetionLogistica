@@ -2594,8 +2594,73 @@ function renderJfTable(rows) {
             <td style="padding:12px 14px;text-align:right;font-weight:900;font-size:16px">${fmtCurrency(granTotal)}</td>
           </tr></tfoot>
         </table>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:10px">
+        <button class="btn btn-sm" onclick="exportarConsolidadoExcel()" style="display:flex;align-items:center;gap:6px;font-size:12px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar consolidado Excel
+        </button>
       </div>`;
+
+    // Guardar datos para exportar
+    window._consolidadoData = { summary, bonoEntregas, bonoAyudantes, extraConds,
+      totalExtraCond, totalExtraAyud, bonoJefActivado, pctGlobal, bonoJefeVal,
+      bonoAux1Val, bonoAux2Val, totalJefatura, granTotal, total };
   }
+}
+
+function exportarConsolidadoExcel() {
+  const d = window._consolidadoData;
+  if (!d) return;
+  const WB = XLSX.utils.book_new();
+  const rows = [];
+  const cur = v => v === 0 ? 0 : v;
+
+  rows.push(['DESGLOSE COMPLETO DE BONIFICACIONES']);
+  rows.push([`${d.total} facturas filtradas`]);
+  rows.push([]);
+
+  // Sección 1
+  rows.push(['1. COMISIONES POR ENTREGA — CONDUCTORES']);
+  rows.push(['Categoría', 'Detalle', 'Cant.', 'Unitario', 'Subtotal']);
+  d.summary.forEach(c => {
+    const unit = c.count > 0 ? Math.round(c.bono / c.count) : 0;
+    rows.push([c.label, c.key, c.count, cur(unit), cur(c.bono)]);
+  });
+  rows.push(['Subtotal comisiones conductores', '', '', '', cur(d.bonoEntregas)]);
+  rows.push([]);
+
+  // Sección 2
+  rows.push(['2. COMISIONES AUXILIARES (50% DEL CONDUCTOR)']);
+  rows.push(['Concepto', 'Detalle', 'Cant.', 'Unitario', 'Subtotal']);
+  rows.push(['Bono ayudante', '50% de comisiones conductor', '', '50%', cur(d.bonoAyudantes)]);
+  rows.push(['Subtotal comisiones auxiliares', '', '', '', cur(d.bonoAyudantes)]);
+  rows.push([]);
+
+  // Sección 3
+  rows.push([`3. EXTRA-BONO META INDIVIDUAL (≥85% CUMPLIMIENTO)`]);
+  rows.push(['Conductor', '% Cumplimiento', 'Meta', 'Extra conductor', 'Extra auxiliar']);
+  d.extraConds.forEach(c => {
+    rows.push([c.nombre, c.pct + '%', c.alcanza ? 'Alcanzada' : 'No alcanzada', cur(c.extraCond), cur(c.extraAyud)]);
+  });
+  rows.push(['Subtotal extra-bonos', '', '', cur(d.totalExtraCond), cur(d.totalExtraAyud)]);
+  rows.push([]);
+
+  // Sección 4
+  rows.push([`4. BONO JEFATURA — Equipo ${d.pctGlobal}% ${d.bonoJefActivado ? 'ACTIVADO' : 'NO activado'}`]);
+  rows.push(['Cargo', 'Condición', '', '', 'Valor']);
+  rows.push(['Jefe de Logística', 'Cumplimiento equipo ≥85%', '', '', cur(d.bonoJefeVal)]);
+  rows.push(['Auxiliar Jefatura 1', 'Apoyo jefatura', '', '', cur(d.bonoAux1Val)]);
+  rows.push(['Auxiliar Jefatura 2', 'Apoyo jefatura', '', '', cur(d.bonoAux2Val)]);
+  rows.push(['Subtotal bono jefatura', '', '', '', cur(d.totalJefatura)]);
+  rows.push([]);
+
+  rows.push(['💰 GRAN TOTAL NÓMINA LOGÍSTICA', '', '', '', cur(d.granTotal)]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 38 }, { wch: 30 }, { wch: 10 }, { wch: 16 }, { wch: 16 }];
+  XLSX.utils.book_append_sheet(WB, ws, 'Consolidado');
+  XLSX.writeFile(WB, `Consolidado_Bonificaciones_${mesActivo.replace(/\s/g,'_')}.xlsx`);
 }
 
 function jfGoPage(p) {
