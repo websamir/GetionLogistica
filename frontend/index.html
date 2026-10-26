@@ -2471,7 +2471,7 @@ function renderJfTable(rows) {
       const subset = rows.filter(f => { const d = getDias(f); const mt = tipoEsMT(f.tipo); return c.test(d, mt, f.fec_entr); });
       const bonoSum = subset.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
       return { ...c, count: subset.length, bono: bonoSum };
-    }).filter(c => c.count > 0);
+    });
 
     const bonoEntregas = rows.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
     const bonoAyudantes = Math.round(bonoEntregas / 2);
