@@ -2590,7 +2590,7 @@ function renderJfTable(rows) {
             </tr>
           </tbody>
           <tfoot><tr style="background:var(--accent);color:#fff">
-            <td style="padding:12px 14px;font-weight:900;font-size:14px" colspan="4">💰 GRAN TOTAL NÓMINA LOGÍSTICA</td>
+            <td style="padding:12px 14px;font-weight:900;font-size:14px" colspan="4">💰 GRAN TOTAL BONIFICACIÓN LOGÍSTICA</td>
             <td style="padding:12px 14px;text-align:right;font-weight:900;font-size:16px">${fmtCurrency(granTotal)}</td>
           </tr></tfoot>
         </table>
@@ -2652,7 +2652,7 @@ function exportarConsolidadoExcel() {
   rows.push(['Subtotal bono jefatura', '', '', '', cur(d.totalJefatura)]);
   rows.push([]);
 
-  rows.push(['💰 GRAN TOTAL NÓMINA LOGÍSTICA', '', '', '', cur(d.granTotal)]);
+  rows.push(['💰 GRAN TOTAL BONIFICACIÓN LOGÍSTICA', '', '', '', cur(d.granTotal)]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = [{ wch: 38 }, { wch: 30 }, { wch: 10 }, { wch: 16 }, { wch: 16 }];
