@@ -2473,35 +2473,126 @@ function renderJfTable(rows) {
       return { ...c, count: subset.length, bono: bonoSum };
     }).filter(c => c.count > 0);
 
-    const bonoTotal = rows.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
+    const bonoEntregas = rows.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
+    const bonoAyudantes = Math.round(bonoEntregas / 2);
     const colorBono = v => v > 0 ? '#059669' : v < 0 ? '#EF4444' : 'var(--fg2)';
+    const metaPct = Math.round(BONO_JEFE_META * 100);
+
+    // Extra bonos por conductor que alcanzó meta (usa stats globales)
+    const condActivos = conductores.filter(c => c.clave !== 'SIN_ASIGNAR');
+    const extraConds = condActivos.map(c => {
+      const pct = stats[c.clave]?.pct_tiempo ?? 0;
+      const alcanza = pct >= metaPct;
+      return { nombre: c.nombre || c.clave, pct, alcanza,
+               extraCond: alcanza ? BONO_EXTRA_COND : 0,
+               extraAyud: alcanza ? BONO_EXTRA_AYUD : 0 };
+    });
+    const totalExtraCond = extraConds.reduce((s, c) => s + c.extraCond, 0);
+    const totalExtraAyud = extraConds.reduce((s, c) => s + c.extraAyud, 0);
+
+    // Bono jefatura (basado en cumplimiento global del equipo)
+    const totalEntGlobal = condActivos.reduce((s,c) => s + (stats[c.clave]?.entregadas||0), 0);
+    const { activado: bonoJefActivado, pct: pctGlobal } = calcBonoJefatura(totalEntGlobal);
+    const bonoJefeVal = bonoJefActivado ? BONO_JEFE : 0;
+    const bonoAux1Val = bonoJefActivado ? BONO_AUX1 : 0;
+    const bonoAux2Val = bonoJefActivado ? BONO_AUX2 : 0;
+    const totalJefatura = bonoJefeVal + bonoAux1Val + bonoAux2Val;
+
+    const granTotal = bonoEntregas + bonoAyudantes + totalExtraCond + totalExtraAyud + totalJefatura;
+
+    const rowStyle = 'border-top:1px solid var(--border)';
+    const subStyle = 'background:var(--bg2);border-top:2px solid var(--border)';
+    const th = (txt, align='left') => `<th style="text-align:${align};padding:7px 14px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase">${txt}</th>`;
 
     tot.innerHTML = `
       <div style="margin-top:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
         <div style="padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);font-weight:700;font-size:13px;color:var(--fg)">
-          Desglose de comisiones — ${total} facturas filtradas
+          Desglose completo de bonificaciones — ${total} facturas filtradas
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead><tr style="background:var(--surface)">
-            <th style="text-align:left;padding:7px 14px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase">Categoría</th>
-            <th style="text-align:right;padding:7px 14px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase">Facturas</th>
-            <th style="text-align:right;padding:7px 14px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase">Bono unitario</th>
-            <th style="text-align:right;padding:7px 14px;color:var(--fg2);font-weight:600;font-size:11px;text-transform:uppercase">Subtotal</th>
-          </tr></thead>
+          <thead><tr style="background:var(--surface)">${th('Concepto')}${th('Detalle')}${th('Cant.','right')}${th('Unitario','right')}${th('Subtotal','right')}</tr></thead>
           <tbody>
+            <!-- Sección 1: comisiones por categoría -->
+            <tr style="${rowStyle}"><td colspan="5" style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--fg2);background:var(--surface)">1. Comisiones por entrega — Conductores</td></tr>
             ${summary.map(c => {
               const unit = c.count > 0 ? Math.round(c.bono / c.count) : 0;
-              return `<tr style="border-top:1px solid var(--border)">
-                <td style="padding:8px 14px;font-weight:600">${c.label}</td>
-                <td style="padding:8px 14px;text-align:right;color:var(--fg2)">${c.count}</td>
-                <td style="padding:8px 14px;text-align:right;color:${colorBono(unit)}">${c.key==='nt'||c.key==='pend' ? '—' : fmtCurrency(unit)}</td>
-                <td style="padding:8px 14px;text-align:right;font-weight:700;color:${colorBono(c.bono)}">${fmtCurrency(c.bono)}</td>
+              return `<tr style="${rowStyle}">
+                <td style="padding:7px 14px;padding-left:24px;font-weight:600">${c.label}</td>
+                <td style="padding:7px 14px;color:var(--fg2);font-size:11px">${c.key==='d0'?'≤0d':c.key==='d1'?'1d':c.key==='d2'?'2d':c.key==='d5'?'3-5d':c.key==='dl'?'6-10d':c.key==='dm'?'11-20d':c.key==='da'?'>20d':c.key==='nt'?'NT':'—'}</td>
+                <td style="padding:7px 14px;text-align:right;color:var(--fg2)">${c.count}</td>
+                <td style="padding:7px 14px;text-align:right;color:${colorBono(unit)}">${c.key==='nt'||c.key==='pend'?'—':fmtCurrency(unit)}</td>
+                <td style="padding:7px 14px;text-align:right;font-weight:700;color:${colorBono(c.bono)}">${fmtCurrency(c.bono)}</td>
               </tr>`;
             }).join('')}
+            <tr style="${subStyle}">
+              <td colspan="4" style="padding:8px 14px;font-weight:700">Subtotal comisiones conductores</td>
+              <td style="padding:8px 14px;text-align:right;font-weight:800;color:${colorBono(bonoEntregas)}">${fmtCurrency(bonoEntregas)}</td>
+            </tr>
+
+            <!-- Sección 2: bono ayudantes -->
+            <tr style="${rowStyle}"><td colspan="5" style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--fg2);background:var(--surface)">2. Comisiones Auxiliares (50% del conductor)</td></tr>
+            <tr style="${rowStyle}">
+              <td style="padding:7px 14px;padding-left:24px;font-weight:600">Bono ayudante</td>
+              <td style="padding:7px 14px;color:var(--fg2);font-size:11px">50% de comisiones conductor</td>
+              <td style="padding:7px 14px;text-align:right;color:var(--fg2)">—</td>
+              <td style="padding:7px 14px;text-align:right;color:var(--fg2)">50%</td>
+              <td style="padding:7px 14px;text-align:right;font-weight:700;color:${colorBono(bonoAyudantes)}">${fmtCurrency(bonoAyudantes)}</td>
+            </tr>
+            <tr style="${subStyle}">
+              <td colspan="4" style="padding:8px 14px;font-weight:700">Subtotal comisiones auxiliares</td>
+              <td style="padding:8px 14px;text-align:right;font-weight:800;color:${colorBono(bonoAyudantes)}">${fmtCurrency(bonoAyudantes)}</td>
+            </tr>
+
+            <!-- Sección 3: extra bonos por meta individual -->
+            <tr style="${rowStyle}"><td colspan="5" style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--fg2);background:var(--surface)">3. Extra-bono meta individual (≥${metaPct}% cumplimiento)</td></tr>
+            ${extraConds.map(c => `
+            <tr style="${rowStyle}">
+              <td style="padding:7px 14px;padding-left:24px;font-weight:600">${c.nombre}</td>
+              <td style="padding:7px 14px;font-size:11px;color:${c.alcanza?'#059669':'var(--fg2)'}">
+                ${c.pct}% ${c.alcanza?'✓ Meta alcanzada':'✗ Sin extra-bono'}
+              </td>
+              <td style="padding:7px 14px;text-align:right;color:var(--fg2)">—</td>
+              <td style="padding:7px 14px;text-align:right;color:${colorBono(c.extraCond)}">${c.alcanza?fmtCurrency(BONO_EXTRA_COND):'—'}</td>
+              <td style="padding:7px 14px;text-align:right;font-weight:700;color:${colorBono(c.extraCond)}">${fmtCurrency(c.extraCond)}</td>
+            </tr>
+            <tr style="${rowStyle}">
+              <td style="padding:4px 14px;padding-left:36px;color:var(--fg2);font-size:11px" colspan="3">↳ Extra auxiliar de ${c.nombre}</td>
+              <td style="padding:4px 14px;text-align:right;color:${colorBono(c.extraAyud)}">${c.alcanza?fmtCurrency(BONO_EXTRA_AYUD):'—'}</td>
+              <td style="padding:4px 14px;text-align:right;font-weight:600;color:${colorBono(c.extraAyud)}">${fmtCurrency(c.extraAyud)}</td>
+            </tr>`).join('')}
+            <tr style="${subStyle}">
+              <td colspan="4" style="padding:8px 14px;font-weight:700">Subtotal extra-bonos (conductores + auxiliares)</td>
+              <td style="padding:8px 14px;text-align:right;font-weight:800;color:${colorBono(totalExtraCond+totalExtraAyud)}">${fmtCurrency(totalExtraCond+totalExtraAyud)}</td>
+            </tr>
+
+            <!-- Sección 4: bono jefatura -->
+            <tr style="${rowStyle}"><td colspan="5" style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--fg2);background:var(--surface)">4. Bono Jefatura — Equipo global ${pctGlobal}% ${bonoJefActivado?'✓ ACTIVADO':'✗ NO activado (requiere ≥'+metaPct+'%)'}</td></tr>
+            <tr style="${rowStyle}">
+              <td style="padding:7px 14px;padding-left:24px;font-weight:600">Jefe de Logística</td>
+              <td style="padding:7px 14px;color:var(--fg2);font-size:11px">Cumplimiento equipo ≥${metaPct}%</td>
+              <td colspan="2" style="padding:7px 14px;text-align:right;color:var(--fg2)">—</td>
+              <td style="padding:7px 14px;text-align:right;font-weight:700;color:${colorBono(bonoJefeVal)}">${fmtCurrency(bonoJefeVal)}</td>
+            </tr>
+            <tr style="${rowStyle}">
+              <td style="padding:7px 14px;padding-left:24px;font-weight:600">Auxiliar Jefatura 1</td>
+              <td style="padding:7px 14px;color:var(--fg2);font-size:11px">Apoyo jefatura</td>
+              <td colspan="2" style="padding:7px 14px;text-align:right;color:var(--fg2)">—</td>
+              <td style="padding:7px 14px;text-align:right;font-weight:700;color:${colorBono(bonoAux1Val)}">${fmtCurrency(bonoAux1Val)}</td>
+            </tr>
+            <tr style="${rowStyle}">
+              <td style="padding:7px 14px;padding-left:24px;font-weight:600">Auxiliar Jefatura 2</td>
+              <td style="padding:7px 14px;color:var(--fg2);font-size:11px">Apoyo jefatura</td>
+              <td colspan="2" style="padding:7px 14px;text-align:right;color:var(--fg2)">—</td>
+              <td style="padding:7px 14px;text-align:right;font-weight:700;color:${colorBono(bonoAux2Val)}">${fmtCurrency(bonoAux2Val)}</td>
+            </tr>
+            <tr style="${subStyle}">
+              <td colspan="4" style="padding:8px 14px;font-weight:700">Subtotal bono jefatura</td>
+              <td style="padding:8px 14px;text-align:right;font-weight:800;color:${colorBono(totalJefatura)}">${fmtCurrency(totalJefatura)}</td>
+            </tr>
           </tbody>
-          <tfoot><tr style="background:var(--bg2);border-top:2px solid var(--border)">
-            <td style="padding:10px 14px;font-weight:800;font-size:13px" colspan="3">BONO NETO TOTAL</td>
-            <td style="padding:10px 14px;text-align:right;font-weight:900;font-size:15px;color:${colorBono(bonoTotal)}">${fmtCurrency(bonoTotal)}</td>
+          <tfoot><tr style="background:var(--accent);color:#fff">
+            <td style="padding:12px 14px;font-weight:900;font-size:14px" colspan="4">💰 GRAN TOTAL NÓMINA LOGÍSTICA</td>
+            <td style="padding:12px 14px;text-align:right;font-weight:900;font-size:16px">${fmtCurrency(granTotal)}</td>
           </tr></tfoot>
         </table>
       </div>`;
