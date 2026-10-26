@@ -2530,13 +2530,17 @@ function renderJfTable(rows) {
 
             <!-- Sección 2: bono ayudantes -->
             <tr style="${rowStyle}"><td colspan="5" style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--fg2);background:var(--surface)">2. Comisiones Auxiliares (50% del conductor)</td></tr>
-            <tr style="${rowStyle}">
-              <td style="padding:7px 14px;padding-left:24px;font-weight:600">Bono auxiliar conductor</td>
-              <td style="padding:7px 14px;color:var(--fg2);font-size:11px">50% de comisiones conductor</td>
-              <td style="padding:7px 14px;text-align:right;color:var(--fg2)">—</td>
-              <td style="padding:7px 14px;text-align:right;color:var(--fg2)">50%</td>
-              <td style="padding:7px 14px;text-align:right;font-weight:700;color:${colorBono(bonoAyudantes)}">${fmtCurrency(bonoAyudantes)}</td>
-            </tr>
+            ${summary.map(c => {
+              const unitAux = c.count > 0 ? Math.round((c.bono / c.count) / 2) : 0;
+              const bonoAux = Math.round(c.bono / 2);
+              return `<tr style="${rowStyle}">
+                <td style="padding:7px 14px;padding-left:24px;font-weight:600">${c.label}</td>
+                <td style="padding:7px 14px;color:var(--fg2);font-size:11px">${c.key==='d0'?'≤0d':c.key==='d1'?'1d':c.key==='d2'?'2d':c.key==='d5'?'3-5d':c.key==='dl'?'6-10d':c.key==='dm'?'11-20d':c.key==='da'?'>20d':'—'}</td>
+                <td style="padding:7px 14px;text-align:right;color:var(--fg2)">${c.count}</td>
+                <td style="padding:7px 14px;text-align:right;color:${colorBono(unitAux)}">${c.key==='pend'?'—':fmtCurrency(unitAux)}</td>
+                <td style="padding:7px 14px;text-align:right;font-weight:700;color:${colorBono(bonoAux)}">${fmtCurrency(bonoAux)}</td>
+              </tr>`;
+            }).join('')}
             <tr style="${subStyle}">
               <td colspan="4" style="padding:8px 14px;font-weight:700">Subtotal comisiones auxiliares</td>
               <td style="padding:8px 14px;text-align:right;font-weight:800;color:${colorBono(bonoAyudantes)}">${fmtCurrency(bonoAyudantes)}</td>
