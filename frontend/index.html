@@ -441,7 +441,7 @@ svg text { font-family: system-ui, sans-serif; }
 .dot-NINO, .dot-NIÑO { background: #DC2626; }
 
 /* ── RESUMEN CARDS ───────────────────────────────────────────── */
-.conductor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.conductor-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 .conductor-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1620,10 +1620,11 @@ function renderDailyBarCond(facts, el) {
     // Etiqueta fecha M/D
     const [, mm, dd] = day.split('-');
     const label = `${parseInt(mm)}/${parseInt(dd)}`;
-    // Valor total arriba
-    const totalLabel = total > 0 ? `<text x="${cx}" y="${yBase - totalH2 - 3}" text-anchor="middle" font-size="8" fill="var(--fg2)" font-weight="600">${total}</text>` : '';
-    const okRect   = okH   > 0 ? `<rect x="${(cx - BAR_W/2).toFixed(1)}" y="${(yBase - totalH2).toFixed(1)}"    width="${BAR_W}" height="${okH}"   fill="#10B981" rx="2"/>` : '';
-    const tardeRect= tardH > 0 ? `<rect x="${(cx - BAR_W/2).toFixed(1)}" y="${(yBase - tardH).toFixed(1)}"  width="${BAR_W}" height="${tardH}" fill="#EF4444" rx="2"/>` : '';
+    // Barras apiladas: verde (a tiempo) en la base, rojo (tarde) encima
+    const xBar = (cx - BAR_W/2).toFixed(1);
+    const tardeRect= tardH > 0 ? `<rect x="${xBar}" y="${(yBase - tardH).toFixed(1)}"             width="${BAR_W}" height="${tardH}" fill="#EF4444" rx="2"/>` : '';
+    const okRect   = okH   > 0 ? `<rect x="${xBar}" y="${(yBase - tardH - okH).toFixed(1)}"       width="${BAR_W}" height="${okH}"   fill="#10B981" rx="2"/>` : '';
+    const totalLabel = total > 0 ? `<text x="${cx}" y="${(yBase - tardH - okH - 3).toFixed(1)}" text-anchor="middle" font-size="8" fill="var(--fg2)" font-weight="600">${total}</text>` : '';
     return `${totalLabel}${okRect}${tardeRect}<text x="${cx}" y="${yBase + 13}" text-anchor="middle" font-size="8" fill="var(--fg2)">${label}</text>`;
   }).join('');
 
