@@ -2457,15 +2457,14 @@ function renderJfTable(rows) {
   // Totalizador detallado (sobre todos los rows filtrados, no solo la página)
   if (tot) {
     const CATS = [
-      { key: 'd0',   label: 'Mismo día',    test: (d,mt,fe) => fe && !mt && d <= 0 },
-      { key: 'd1',   label: '1 día',        test: (d,mt,fe) => fe && !mt && d === 1 },
-      { key: 'd2',   label: '2 días',       test: (d,mt,fe) => fe && !mt && d === 2 },
-      { key: 'd5',   label: '3 – 5 días',   test: (d,mt,fe) => fe && !mt && d >= 3 && d <= 5 },
-      { key: 'dl',   label: 'Demora leve (6–10d)',  test: (d,mt,fe) => fe && !mt && d >= 6  && d <= 10 },
-      { key: 'dm',   label: 'Demora media (11–20d)', test: (d,mt,fe) => fe && !mt && d >= 11 && d <= 20 },
-      { key: 'da',   label: 'Demora alta (>20d)',    test: (d,mt,fe) => fe && !mt && d > 20 },
-      { key: 'nt',   label: 'NT (traslados)', test: (d,mt,fe) => mt },
-      { key: 'pend', label: 'Pendientes',    test: (d,mt,fe) => !fe && !mt },
+      { key: 'd0',   label: 'Mismo día',           test: (d,mt,fe) => fe && !mt && d <= 0 },
+      { key: 'd1',   label: '1 día',               test: (d,mt,fe) => fe && !mt && d > 0  && d <= 1 },
+      { key: 'd2',   label: '2 días',              test: (d,mt,fe) => fe && !mt && d > 1  && d <= 2 },
+      { key: 'd5',   label: '3 – 5 días',          test: (d,mt,fe) => fe && !mt && d > 2  && d <= 5 },
+      { key: 'dl',   label: 'Demora leve (6–10d)', test: (d,mt,fe) => fe && !mt && d > 5  && d <= 10 },
+      { key: 'dm',   label: 'Demora media (11–20d)',test: (d,mt,fe) => fe && !mt && d > 10 && d <= 20 },
+      { key: 'da',   label: 'Demora alta (>20d)',   test: (d,mt,fe) => fe && !mt && d > 20 },
+      { key: 'pend', label: 'Pendientes',           test: (d,mt,fe) => !fe && !mt },
     ];
     const summary = CATS.map(c => {
       const subset = rows.filter(f => { const d = getDias(f); const mt = tipoEsMT(f.tipo); return c.test(d, mt, f.fec_entr); });
