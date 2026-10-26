@@ -2983,7 +2983,9 @@ async function adminApply(tipo) {
     status.textContent = `✅ ${data.registros || '?'} registros cargados`;
     addLog(`Carga exitosa: ${tipo} · ${data.registros || '?'} registros`, 'ok');
     toast(`Carga de ${tipo} exitosa: ${data.registros || '?'} registros`, 'ok');
+    const _page = activePage;
     await loadAll();
+    if (_page) navigateTo(_page);
   } catch (ex) {
     status.textContent = 'Error: ' + ex.message;
     addLog(`Error al cargar ${tipo}: ${ex.message}`, 'err');
