@@ -1549,6 +1549,10 @@ function renderResumen() {
             <div style="font-size:10px;color:var(--fg2)">Bono ayudante</div>
             <div style="font-size:14px;font-weight:700;color:var(--fg)">${fmtCurrency(s.bono_a||0)}</div>
           </div>
+          <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:8px;margin-top:4px">
+            <div style="font-size:10px;color:var(--fg2);margin-bottom:6px;font-weight:600">Entregas por día</div>
+            <div id="res-daily-bar-${c.clave}"></div>
+          </div>
           ${vFacts.length > 0 ? `
           <div style="grid-column:1/-1;border-top:1px dashed #8B5CF655;padding-top:6px;margin-top:2px">
             <div style="font-size:10px;font-weight:700;color:#8B5CF6;margin-bottom:4px">🏭 Virtuales (${vFacts.length})</div>
@@ -1576,7 +1580,63 @@ function renderResumen() {
   conductores.forEach(c => {
     const el2 = document.getElementById(`res-cat-${c.clave}`);
     if (el2) renderStackChartEl(facturas.filter(f => f.cond_key === c.clave), el2, true);
+    const elBar = document.getElementById(`res-daily-bar-${c.clave}`);
+    if (elBar) renderDailyBarCond(facturas.filter(f => f.cond_key === c.clave && f.fec_entr), elBar);
   });
+}
+
+// Barras verticales diarias por conductor (verde=a tiempo, rojo=tarde)
+function renderDailyBarCond(facts, el) {
+  if (!el || !facts.length) { el.innerHTML = '<div style="font-size:10px;color:var(--fg2);text-align:center;padding:8px">Sin entregas</div>'; return; }
+
+  // Agrupar por fecha de entrega
+  const byDay = {};
+  facts.forEach(f => {
+    const d = getDias(f);
+    const ok = d !== null && d <= 5 && !tipoEsMT(f.tipo);
+    const key = f.fec_entr.slice(0, 10);
+    if (!byDay[key]) byDay[key] = { ok: 0, tarde: 0 };
+    if (tipoEsMT(f.tipo)) return;
+    if (ok) byDay[key].ok++; else byDay[key].tarde++;
+  });
+
+  const days = Object.keys(byDay).sort();
+  if (!days.length) { el.innerHTML = ''; return; }
+
+  const W = 260, BAR_W = Math.max(8, Math.min(18, Math.floor((W - 16) / days.length) - 3));
+  const maxVal = Math.max(...days.map(d => byDay[d].ok + byDay[d].tarde), 1);
+  const H_BAR = 52, PAD_B = 22, PAD_T = 14;
+  const totalH = H_BAR + PAD_B + PAD_T;
+  const slotW = (W - 8) / days.length;
+
+  const bars = days.map((day, i) => {
+    const { ok, tarde } = byDay[day];
+    const total = ok + tarde;
+    const cx = 4 + i * slotW + slotW / 2;
+    const okH  = Math.round((ok   / maxVal) * H_BAR);
+    const tardH= Math.round((tarde/ maxVal) * H_BAR);
+    const totalH2 = okH + tardH;
+    const yBase = PAD_T + H_BAR;
+    // Etiqueta fecha M/D
+    const [, mm, dd] = day.split('-');
+    const label = `${parseInt(mm)}/${parseInt(dd)}`;
+    // Valor total arriba
+    const totalLabel = total > 0 ? `<text x="${cx}" y="${yBase - totalH2 - 3}" text-anchor="middle" font-size="8" fill="var(--fg2)" font-weight="600">${total}</text>` : '';
+    const okRect   = okH   > 0 ? `<rect x="${(cx - BAR_W/2).toFixed(1)}" y="${(yBase - totalH2).toFixed(1)}"    width="${BAR_W}" height="${okH}"   fill="#10B981" rx="2"/>` : '';
+    const tardeRect= tardH > 0 ? `<rect x="${(cx - BAR_W/2).toFixed(1)}" y="${(yBase - tardH).toFixed(1)}"  width="${BAR_W}" height="${tardH}" fill="#EF4444" rx="2"/>` : '';
+    return `${totalLabel}${okRect}${tardeRect}<text x="${cx}" y="${yBase + 13}" text-anchor="middle" font-size="8" fill="var(--fg2)">${label}</text>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="overflow-x:auto">
+      <svg viewBox="0 0 ${W} ${totalH}" style="width:100%;min-width:${Math.max(W, days.length*14)}px;height:auto;display:block;overflow:visible">
+        ${bars}
+      </svg>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px;font-size:9px;color:var(--fg2)">
+      <span><span style="display:inline-block;width:8px;height:8px;background:#10B981;border-radius:2px;vertical-align:middle;margin-right:2px"></span>A tiempo</span>
+      <span><span style="display:inline-block;width:8px;height:8px;background:#EF4444;border-radius:2px;vertical-align:middle;margin-right:2px"></span>Tarde</span>
+    </div>`;
 }
 
 // Versión reutilizable de renderStackChart que acepta un elemento destino
