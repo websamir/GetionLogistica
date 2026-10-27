@@ -2297,6 +2297,17 @@ function renderFacturasJefe() {
   const pend = facturas.filter(f => !f.fec_entr).length;
   const bonoNeto = facturas.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
 
+  // Totales consolidado
+  const bonoAux = Math.round(bonoNeto / 2);
+  const metaPct = Math.round(BONO_JEFE_META * 100);
+  const condActivos = conductores.filter(c => c.clave !== 'SIN_ASIGNAR');
+  const extraCond = condActivos.reduce((s,c) => s + ((stats[c.clave]?.pct_tiempo??0) >= metaPct ? BONO_EXTRA_COND : 0), 0);
+  const extraAyud = condActivos.reduce((s,c) => s + ((stats[c.clave]?.pct_tiempo??0) >= metaPct ? BONO_EXTRA_AYUD : 0), 0);
+  const totalEnt  = condActivos.reduce((s,c) => s + (stats[c.clave]?.entregadas||0), 0);
+  const { activado: jefActiv } = calcBonoJefatura(totalEnt);
+  const bonoJef   = jefActiv ? BONO_JEFE + BONO_AUX1 + BONO_AUX2 : 0;
+  const granTotal = bonoNeto + bonoAux + extraCond + extraAyud + bonoJef;
+
   const condKeys = [...new Set(facturas.map(f => f.cond_key).filter(Boolean))];
 
   el.innerHTML = `
@@ -2304,11 +2315,15 @@ function renderFacturasJefe() {
       <h2>Facturas</h2>
       <p>Todas las facturas del equipo · ${mesActivo}</p>
     </div>
-    <div class="kpi-grid" style="margin-bottom:16px">
+    <div class="kpi-grid" style="margin-bottom:8px">
       <div class="kpi"><div class="kpi-label">Total</div><div class="kpi-value">${total}</div></div>
       <div class="kpi ok"><div class="kpi-label">A Tiempo</div><div class="kpi-value">${aTiempo}</div></div>
       <div class="kpi warn"><div class="kpi-label">Pendientes</div><div class="kpi-value">${pend}</div></div>
-      <div class="kpi ${bonoNeto >= 0 ? 'ok' : 'danger'}"><div class="kpi-label">Bono Total</div><div class="kpi-value" style="font-size:18px">${fmtCurrency(bonoNeto)}</div></div>
+      <div class="kpi ${bonoNeto >= 0 ? 'ok' : 'danger'}"><div class="kpi-label">Bono conductores</div><div class="kpi-value" style="font-size:18px">${fmtCurrency(bonoNeto)}</div></div>
+      <div class="kpi ${bonoAux >= 0 ? 'ok' : 'danger'}"><div class="kpi-label">Bono auxiliares</div><div class="kpi-value" style="font-size:18px">${fmtCurrency(bonoAux)}</div></div>
+      <div class="kpi ${(extraCond+extraAyud) > 0 ? 'ok' : ''}"><div class="kpi-label">Extra-bonos</div><div class="kpi-value" style="font-size:18px">${fmtCurrency(extraCond+extraAyud)}</div></div>
+      <div class="kpi ${jefActiv ? 'ok' : ''}"><div class="kpi-label">Bono jefatura</div><div class="kpi-value" style="font-size:18px">${fmtCurrency(bonoJef)}</div></div>
+      <div class="kpi accent"><div class="kpi-label">Gran Total Bonif.</div><div class="kpi-value" style="font-size:18px">${fmtCurrency(granTotal)}</div></div>
     </div>
 
     <div class="pill-group" id="jf-pills">
