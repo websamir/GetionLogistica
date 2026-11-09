@@ -2663,7 +2663,7 @@ function renderJfTable(rows) {
     // Guardar datos para exportar
     window._consolidadoData = { summary, bonoEntregas, bonoAyudantes, extraConds,
       totalExtraCond, totalExtraAyud, bonoJefActivado, pctGlobal, bonoJefeVal,
-      bonoAux1Val, bonoAux2Val, totalJefatura, granTotal, total, condDesglose };
+      bonoAux1Val, bonoAux2Val, totalJefatura, granTotal, total, condDesglose, rows };
   }
 }
 
@@ -2729,6 +2729,41 @@ function exportarConsolidadoExcel() {
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = [{ wch: 38 }, { wch: 30 }, { wch: 10 }, { wch: 16 }, { wch: 16 }];
   XLSX.utils.book_append_sheet(WB, ws, 'Consolidado');
+
+  // Hoja 2: detalle entregas por conductor y ciudad
+  if (d.rows && d.rows.length) {
+    const condKeys = [...new Set(d.rows.filter(f => f.cond_key && f.cond_key !== 'SIN_ASIGNAR').map(f => f.cond_key))].sort();
+    const det = [['Conductor', 'Ciudad destino', 'Cant. entregas', 'Cant. pendientes', 'Bono conductor']];
+    condKeys.forEach(ck => {
+      const cNombre = conductores.find(c => c.clave === ck)?.nombre || ck;
+      const cRows = d.rows.filter(f => f.cond_key === ck);
+      // agrupar por ciudad
+      const ciudades = {};
+      cRows.forEach(f => {
+        const ciudad = f.ciudad || 'Sin ciudad';
+        if (!ciudades[ciudad]) ciudades[ciudad] = { ent: 0, pend: 0, bono: 0 };
+        if (f.fec_entr) {
+          ciudades[ciudad].ent++;
+          ciudades[ciudad].bono += calcBono(getDias(f), tipoEsMT(f.tipo));
+        } else {
+          ciudades[ciudad].pend++;
+        }
+      });
+      const ciudadList = Object.entries(ciudades).sort((a,b) => b[1].ent - a[1].ent);
+      ciudadList.forEach(([ciudad, v], i) => {
+        det.push([i === 0 ? cNombre : '', ciudad, v.ent, v.pend, cur(v.bono)]);
+      });
+      det.push(['', 'SUBTOTAL ' + cNombre,
+        ciudadList.reduce((s,[,v])=>s+v.ent,0),
+        ciudadList.reduce((s,[,v])=>s+v.pend,0),
+        cur(ciudadList.reduce((s,[,v])=>s+v.bono,0))]);
+      det.push([]);
+    });
+    const ws2 = XLSX.utils.aoa_to_sheet(det);
+    ws2['!cols'] = [{ wch: 20 }, { wch: 28 }, { wch: 16 }, { wch: 16 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(WB, ws2, 'Detalle por conductor');
+  }
+
   XLSX.writeFile(WB, `Consolidado_Bonificaciones_${mesActivo.replace(/\s/g,'_')}.xlsx`);
 }
 
