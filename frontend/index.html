@@ -2685,7 +2685,7 @@ function exportarConsolidadoExcel() {
     const align = opts.right ? 'text-align:right;' : '';
     const size = opts.size ? `font-size:${opts.size}pt;` : '';
     const colspan = opts.colspan ? `colspan="${opts.colspan}"` : '';
-    return `<td ${colspan} style="padding:6px 10px;border:1px solid #e2e8f0;background:${bg};color:${color};${bold}${align}${size}">${txt}</td>`;
+    return `<td x:str ${colspan} style="padding:6px 10px;border:1px solid #e2e8f0;background:${bg};color:${color};mso-number-format:'@';${bold}${align}${size}">${txt}</td>`;
   };
   const tr = cells => `<tr>${cells}</tr>`;
   const secHead = txt => tr(td(txt, {bg:'#f1f5f9',color:'#475569',bold:true,colspan:5}) );
