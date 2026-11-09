@@ -2707,28 +2707,42 @@ function exportarConsolidadoExcel() {
   });
   html += subRow('Subtotal comisiones conductores', d.bonoEntregas);
 
-  // Sección 1b: por conductor
+  // Sección 1b: desglose por categoría para cada conductor
+  const CATS_XLS = [
+    { key: 'd0',   label: 'Mismo día',            test: (d,fe) => fe && d <= 0,            unit: 6000 },
+    { key: 'd1',   label: '1 día',                test: (d,fe) => fe && d > 0  && d <= 1,  unit: 6000 },
+    { key: 'd2',   label: '2 días',               test: (d,fe) => fe && d > 1  && d <= 2,  unit: 5000 },
+    { key: 'd5',   label: '3 – 5 días',           test: (d,fe) => fe && d > 2  && d <= 5,  unit: 4000 },
+    { key: 'dl',   label: 'Demora leve (6–10d)',  test: (d,fe) => fe && d > 5  && d <= 10, unit: -400  },
+    { key: 'dm',   label: 'Demora media (11–20d)',test: (d,fe) => fe && d > 10 && d <= 20, unit: -800  },
+    { key: 'da',   label: 'Demora alta (>20d)',   test: (d,fe) => fe && d > 20,             unit: -2000 },
+    { key: 'pend', label: 'Pendientes',           test: (d,fe) => !fe,                      unit: null  },
+  ];
   html += secHead('1b. COMISIONES POR ENTREGA — DETALLE POR CONDUCTOR');
-  html += tr(td('Conductor',{bg:'#f1f5f9',bold:true}) + td('Ciudad destino',{bg:'#f1f5f9',bold:true}) + td('Entregas',{bg:'#f1f5f9',bold:true,right:true}) + td('Pendientes',{bg:'#f1f5f9',bold:true,right:true}) + td('Bono',{bg:'#f1f5f9',bold:true,right:true}));
   if (d.rows && d.rows.length) {
     const condKeys = [...new Set(d.rows.filter(f=>f.cond_key&&f.cond_key!=='SIN_ASIGNAR').map(f=>f.cond_key))].sort();
     condKeys.forEach(ck => {
       const cNombre = conductores.find(c=>c.clave===ck)?.nombre||ck;
       const cColor = COND_COLORS[ck]||'#2563EB';
-      const cRows = d.rows.filter(f=>f.cond_key===ck);
-      const ciudades = {};
-      cRows.forEach(f => {
-        const ciudad = f.ciudad||'Sin ciudad';
-        if(!ciudades[ciudad]) ciudades[ciudad]={ent:0,pend:0,bono:0};
-        if(f.fec_entr){ciudades[ciudad].ent++;ciudades[ciudad].bono+=calcBono(getDias(f),tipoEsMT(f.tipo));}
-        else ciudades[ciudad].pend++;
+      const cRows = d.rows.filter(f=>f.cond_key===ck&&!tipoEsMT(f.tipo));
+      // Encabezado conductor
+      html += tr(td(cNombre,{bg:'#e0f2fe',color:cColor,bold:true,colspan:2}) + td('CANT.',{bg:'#e0f2fe',bold:true,right:true}) + td('UNITARIO',{bg:'#e0f2fe',bold:true,right:true}) + td('SUBTOTAL',{bg:'#e0f2fe',bold:true,right:true}));
+      let totCond = 0;
+      CATS_XLS.forEach(cat => {
+        const filas = cRows.filter(f => cat.test(getDias(f), !!f.fec_entr));
+        const cnt = filas.length;
+        const bono = cat.unit !== null ? cnt * cat.unit : 0;
+        totCond += bono;
+        const unitStr = cat.unit === null ? '—' : fmtN(cat.unit);
+        html += tr(
+          td('  '+cat.label) +
+          td(cat.key) +
+          td(cnt,{right:true}) +
+          td(unitStr,{right:true,color:cat.unit!==null?colV(cat.unit):gray}) +
+          td(cat.unit!==null?fmtN(bono):'—',{right:true,bold:true,color:bono!==0?colV(bono):gray})
+        );
       });
-      const list = Object.entries(ciudades).sort((a,b)=>b[1].ent-a[1].ent);
-      list.forEach(([ciudad,v],i) => {
-        html += tr(td(i===0?cNombre:'',{bold:i===0,color:cColor}) + td('  '+ciudad) + td(v.ent,{right:true}) + td(v.pend||0,{right:true,color:v.pend?'#F59E0B':gray}) + td(fmtN(v.bono),{right:true,color:colV(v.bono)}));
-      });
-      const totEnt=list.reduce((s,[,v])=>s+v.ent,0), totPend=list.reduce((s,[,v])=>s+v.pend,0), totBono=list.reduce((s,[,v])=>s+v.bono,0);
-      html += tr(td('',{bg:'#f8fafc'}) + td('SUBTOTAL '+cNombre,{bg:'#f8fafc',bold:true,color:cColor}) + td(totEnt,{bg:'#f8fafc',bold:true,right:true}) + td(totPend||0,{bg:'#f8fafc',bold:true,right:true}) + td(fmtN(totBono),{bg:'#f8fafc',bold:true,right:true,color:colV(totBono)}));
+      html += tr(td('',{bg:'#f0fdf4'}) + td('SUBTOTAL '+cNombre,{bg:'#f0fdf4',bold:true,color:cColor}) + td('',{bg:'#f0fdf4',right:true}) + td('',{bg:'#f0fdf4',right:true}) + td(fmtN(totCond),{bg:'#f0fdf4',bold:true,right:true,color:colV(totCond)}));
       html += tr(td('',{colspan:5}));
     });
   }
