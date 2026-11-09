@@ -2295,12 +2295,11 @@ function renderFacturasJefe() {
   const total = facturas.length;
   const aTiempo = facturas.filter(f => { const d = getDias(f); return d !== null && d <= 5 && !tipoEsMT(f.tipo) && f.fec_entr; }).length;
   const pend = facturas.filter(f => !f.fec_entr).length;
-  const bonoNeto = facturas.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
-
-  // Totales consolidado
-  const bonoAux = Math.round(bonoNeto / 2);
+  // Usar stats del backend igual que Resumen General
   const metaPct = Math.round(BONO_JEFE_META * 100);
   const condActivos = conductores.filter(c => c.clave !== 'SIN_ASIGNAR');
+  const bonoNeto = condActivos.reduce((s,c) => s + Number(stats[c.clave]?.bono_c || 0), 0);
+  const bonoAux  = condActivos.reduce((s,c) => s + Number(stats[c.clave]?.bono_a || 0), 0);
   const extraCond = condActivos.reduce((s,c) => s + ((stats[c.clave]?.pct_tiempo??0) >= metaPct ? BONO_EXTRA_COND : 0), 0);
   const extraAyud = condActivos.reduce((s,c) => s + ((stats[c.clave]?.pct_tiempo??0) >= metaPct ? BONO_EXTRA_AYUD : 0), 0);
   const totalEnt  = condActivos.reduce((s,c) => s + (stats[c.clave]?.entregadas||0), 0);
@@ -2487,13 +2486,14 @@ function renderJfTable(rows) {
       return { ...c, count: subset.length, bono: bonoSum };
     });
 
-    const bonoEntregas = rows.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
-    const bonoAyudantes = Math.round(bonoEntregas / 2);
+    // Usar bono_c y bono_a del backend (igual que Resumen General) para que los totales coincidan
+    const condActivos = conductores.filter(c => c.clave !== 'SIN_ASIGNAR');
+    const bonoEntregas = condActivos.reduce((s, c) => s + Number(stats[c.clave]?.bono_c || 0), 0);
+    const bonoAyudantes = condActivos.reduce((s, c) => s + Number(stats[c.clave]?.bono_a || 0), 0);
     const colorBono = v => v > 0 ? '#059669' : v < 0 ? '#EF4444' : 'var(--fg2)';
     const metaPct = Math.round(BONO_JEFE_META * 100);
 
     // Extra bonos por conductor que alcanzó meta (usa stats globales)
-    const condActivos = conductores.filter(c => c.clave !== 'SIN_ASIGNAR');
     const extraConds = condActivos.map(c => {
       const pct = stats[c.clave]?.pct_tiempo ?? 0;
       const alcanza = pct >= metaPct;
