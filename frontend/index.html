@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestión Logística — INVESAKK SAS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
 /* ── CSS TOKENS ─────────────────────────────────────────────── */
 :root {
@@ -2667,124 +2668,183 @@ function renderJfTable(rows) {
   }
 }
 
-function exportarConsolidadoExcel() {
+async function exportarConsolidadoExcel() {
   const d = window._consolidadoData;
   if (!d) return;
-  const fmtN = v => {
+
+  const fmtP = v => {
     if (v === 0) return '$ 0';
     const abs = Math.round(Math.abs(v)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    return (v < 0 ? '-' : '') + '$ ' + abs;
+    return (v < 0 ? '-$ ' : '$ ') + abs;
   };
-  const green = '#059669'; const red = '#EF4444'; const gray = '#64748B';
-  const colV = v => v > 0 ? green : v < 0 ? red : gray;
+  const argb = hex => 'FF' + hex.replace('#','').toUpperCase();
+  const GREEN = '05966A'; const RED = 'EF4444'; const GRAY = '64748B';
+  const colV = v => v > 0 ? GREEN : v < 0 ? RED : GRAY;
 
-  const td = (txt, opts={}) => {
-    const bg = opts.bg || '#ffffff';
-    const color = opts.color || '#111827';
-    const bold = opts.bold ? 'font-weight:700;' : '';
-    const align = opts.right ? 'text-align:right;' : '';
-    const size = opts.size ? `font-size:${opts.size}pt;` : '';
-    const colspan = opts.colspan ? `colspan="${opts.colspan}"` : '';
-    return `<td x:str ${colspan} style="padding:6px 10px;border:1px solid #e2e8f0;background:${bg};color:${color};mso-number-format:'@';${bold}${align}${size}">${txt}</td>`;
+  const WB = new ExcelJS.Workbook();
+  WB.creator = 'INVESAKK SAS';
+  const ws = WB.addWorksheet('Consolidado', { views: [{ showGridLines: false }] });
+  ws.columns = [
+    { width: 38 }, { width: 22 }, { width: 10 }, { width: 18 }, { width: 18 }
+  ];
+
+  const border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+
+  const addRow = (vals, opts={}) => {
+    const r = ws.addRow(vals);
+    r.height = opts.h || 18;
+    r.eachCell({ includeEmpty: true }, (cell, col) => {
+      const o = Array.isArray(opts.cols) ? (opts.cols[col-1] || {}) : opts;
+      if (o.bg)    cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: argb(o.bg) } };
+      if (o.color) cell.font = { ...(cell.font||{}), color:{ argb: argb(o.color) }, bold: !!o.bold, size: o.size||10, name:'Arial' };
+      else if (o.bold) cell.font = { ...(cell.font||{}), bold:true, size: o.size||10, name:'Arial' };
+      else cell.font = { name:'Arial', size:10 };
+      cell.alignment = { vertical:'middle', horizontal: (col >= 3 ? 'right' : 'left'), wrapText: false };
+      cell.border = border;
+    });
+    if (opts.merge) ws.mergeCells(`A${r.number}:E${r.number}`);
+    if (opts.merge4) ws.mergeCells(`A${r.number}:D${r.number}`);
+    if (opts.merge2) ws.mergeCells(`A${r.number}:B${r.number}`);
+    return r;
   };
-  const tr = cells => `<tr>${cells}</tr>`;
-  const secHead = txt => tr(td(txt, {bg:'#f1f5f9',color:'#475569',bold:true,colspan:5}) );
-  const subRow = (label, val) => tr(
-    td(label, {bg:'#f8fafc',bold:true,colspan:4}) +
-    td(fmtN(val), {bg:'#f8fafc',bold:true,right:true,color:colV(val)})
-  );
 
-  let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
-<head><meta charset="UTF-8">
-<style>table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt;width:100%}</style>
-</head><body><table>`;
+  const secHead = txt => addRow([txt,'','','',''], { bg:'#f1f5f9', color:'#334155', bold:true, merge:true, h:20 });
+  const subRow5 = (label, v1, v2) => {
+    addRow([label,'','', fmtP(v1), v2!==undefined?fmtP(v2):''], {
+      merge4: !v2, h:19,
+      cols:[{bg:'#f0fdf4',bold:true},{bg:'#f0fdf4'},{bg:'#f0fdf4'},{bg:'#f0fdf4',bold:true,color:'#'+colV(v1)},{bg:'#f0fdf4',bold:true,color: v2!==undefined?'#'+colV(v2):'#64748B'}]
+    });
+  };
 
-  // Título
-  html += tr(td(`DESGLOSE COMPLETO DE BONIFICACIONES — ${d.total} facturas · ${mesActivo}`, {bg:'#1e293b',color:'#f8fafc',bold:true,size:12,colspan:5}));
-  html += tr(td('CONCEPTO',{bg:'#334155',color:'#cbd5e1',bold:true}) + td('DETALLE',{bg:'#334155',color:'#cbd5e1',bold:true}) + td('CANT.',{bg:'#334155',color:'#cbd5e1',bold:true,right:true}) + td('UNITARIO',{bg:'#334155',color:'#cbd5e1',bold:true,right:true}) + td('SUBTOTAL',{bg:'#334155',color:'#cbd5e1',bold:true,right:true}));
+  // ── Título ──
+  addRow([`DESGLOSE COMPLETO DE BONIFICACIONES — ${d.total} facturas · ${mesActivo}`,'','','',''],
+    { bg:'#1e293b', color:'#f8fafc', bold:true, size:12, merge:true, h:28 });
+  addRow(['CONCEPTO','DETALLE','CANT.','UNITARIO','SUBTOTAL'], {
+    cols: Array(5).fill({ bg:'#334155', color:'#cbd5e1', bold:true }), h:20
+  });
 
-  // Sección 1
-  html += secHead('1. COMISIONES POR ENTREGA — CONDUCTORES');
+  // ── Sección 1 ──
+  secHead('1. COMISIONES POR ENTREGA — CONDUCTORES');
   d.summary.forEach(c => {
     const unit = c.count > 0 ? Math.round(c.bono / c.count) : 0;
-    html += tr(td('  '+c.label,{bold:true}) + td(c.key) + td(c.count,{right:true}) + td(c.key==='pend'?'—':fmtN(unit),{right:true,color:colV(unit)}) + td(fmtN(c.bono),{right:true,bold:true,color:colV(c.bono)}));
+    addRow(['  '+c.label, c.key, c.count, c.key==='pend'?'—':fmtP(unit), fmtP(c.bono)], {
+      cols:[{bold:true},{},{},{color:'#'+colV(unit)},{bold:true,color:'#'+colV(c.bono)}]
+    });
   });
-  html += subRow('Subtotal comisiones conductores', d.bonoEntregas);
+  addRow(['Subtotal comisiones conductores','','','', fmtP(d.bonoEntregas)], {
+    merge4:true, cols:[{bg:'#f8fafc',bold:true},{bg:'#f8fafc'},{bg:'#f8fafc'},{bg:'#f8fafc'},{bg:'#f8fafc',bold:true,color:'#'+colV(d.bonoEntregas)}], h:19
+  });
 
-  // Sección 1b: desglose por categoría para cada conductor
+  // ── Sección 1b: por conductor ──
   const CATS_XLS = [
-    { key: 'd0',   label: 'Mismo día',            test: (d,fe) => fe && d <= 0,            unit: 6000 },
-    { key: 'd1',   label: '1 día',                test: (d,fe) => fe && d > 0  && d <= 1,  unit: 6000 },
-    { key: 'd2',   label: '2 días',               test: (d,fe) => fe && d > 1  && d <= 2,  unit: 5000 },
-    { key: 'd5',   label: '3 – 5 días',           test: (d,fe) => fe && d > 2  && d <= 5,  unit: 4000 },
-    { key: 'dl',   label: 'Demora leve (6–10d)',  test: (d,fe) => fe && d > 5  && d <= 10, unit: -400  },
-    { key: 'dm',   label: 'Demora media (11–20d)',test: (d,fe) => fe && d > 10 && d <= 20, unit: -800  },
-    { key: 'da',   label: 'Demora alta (>20d)',   test: (d,fe) => fe && d > 20,             unit: -2000 },
-    { key: 'pend', label: 'Pendientes',           test: (d,fe) => !fe,                      unit: null  },
+    { label:'Mismo día',             test:(dv,fe)=>fe&&dv<=0,            unit:6000  },
+    { label:'1 día',                 test:(dv,fe)=>fe&&dv>0&&dv<=1,      unit:6000  },
+    { label:'2 días',                test:(dv,fe)=>fe&&dv>1&&dv<=2,      unit:5000  },
+    { label:'3 – 5 días',            test:(dv,fe)=>fe&&dv>2&&dv<=5,      unit:4000  },
+    { label:'Demora leve (6–10d)',   test:(dv,fe)=>fe&&dv>5&&dv<=10,     unit:-400  },
+    { label:'Demora media (11–20d)', test:(dv,fe)=>fe&&dv>10&&dv<=20,    unit:-800  },
+    { label:'Demora alta (>20d)',    test:(dv,fe)=>fe&&dv>20,             unit:-2000 },
+    { label:'Pendientes',            test:(dv,fe)=>!fe,                   unit:null  },
   ];
-  html += secHead('1b. COMISIONES POR ENTREGA — DETALLE POR CONDUCTOR');
+  secHead('1b. COMISIONES POR ENTREGA — DETALLE POR CONDUCTOR');
   if (d.rows && d.rows.length) {
     const condKeys = [...new Set(d.rows.filter(f=>f.cond_key&&f.cond_key!=='SIN_ASIGNAR').map(f=>f.cond_key))].sort();
     condKeys.forEach(ck => {
       const cNombre = conductores.find(c=>c.clave===ck)?.nombre||ck;
-      const cColor = COND_COLORS[ck]||'#2563EB';
+      const cHex = (COND_COLORS[ck]||'#2563EB').replace('#','');
       const cRows = d.rows.filter(f=>f.cond_key===ck&&!tipoEsMT(f.tipo));
-      // Encabezado conductor
-      html += tr(td(cNombre,{bg:'#e0f2fe',color:cColor,bold:true,colspan:2}) + td('CANT.',{bg:'#e0f2fe',bold:true,right:true}) + td('UNITARIO',{bg:'#e0f2fe',bold:true,right:true}) + td('SUBTOTAL',{bg:'#e0f2fe',bold:true,right:true}));
+      // cabecera conductor
+      const rH = ws.addRow([cNombre,'','CANT.','UNITARIO','SUBTOTAL']);
+      rH.height = 20;
+      ws.mergeCells(`A${rH.number}:B${rH.number}`);
+      rH.eachCell({includeEmpty:true}, (cell,col) => {
+        cell.fill   = {type:'pattern',pattern:'solid',fgColor:{argb:'FFE0F2FE'}};
+        cell.font   = {name:'Arial',size:10,bold:true,color:{argb:'FF'+cHex}};
+        cell.border = border;
+        cell.alignment = {vertical:'middle',horizontal:col>=3?'right':'left'};
+      });
       let totCond = 0;
       CATS_XLS.forEach(cat => {
-        const filas = cRows.filter(f => cat.test(getDias(f), !!f.fec_entr));
-        const cnt = filas.length;
-        const bono = cat.unit !== null ? cnt * cat.unit : 0;
+        const cnt = cRows.filter(f=>cat.test(getDias(f),!!f.fec_entr)).length;
+        const bono = cat.unit!==null ? cnt*cat.unit : 0;
         totCond += bono;
-        const unitStr = cat.unit === null ? '—' : fmtN(cat.unit);
-        html += tr(
-          td('  '+cat.label) +
-          td(cat.key) +
-          td(cnt,{right:true}) +
-          td(unitStr,{right:true,color:cat.unit!==null?colV(cat.unit):gray}) +
-          td(cat.unit!==null?fmtN(bono):'—',{right:true,bold:true,color:bono!==0?colV(bono):gray})
-        );
+        addRow(['  '+cat.label,'',cnt, cat.unit===null?'—':fmtP(cat.unit), cat.unit!==null?fmtP(bono):'—'], {
+          cols:[{bold:true},{},{},{color:'#'+(cat.unit!==null?colV(cat.unit):GRAY)},{bold:true,color:'#'+(bono!==0?colV(bono):GRAY)}]
+        });
       });
-      html += tr(td('',{bg:'#f0fdf4'}) + td('SUBTOTAL '+cNombre,{bg:'#f0fdf4',bold:true,color:cColor}) + td('',{bg:'#f0fdf4',right:true}) + td('',{bg:'#f0fdf4',right:true}) + td(fmtN(totCond),{bg:'#f0fdf4',bold:true,right:true,color:colV(totCond)}));
-      html += tr(td('',{colspan:5}));
+      // subtotal conductor
+      const rS = ws.addRow(['','SUBTOTAL '+cNombre,'','',fmtP(totCond)]);
+      rS.height = 19;
+      ws.mergeCells(`A${rS.number}:B${rS.number}`);
+      rS.eachCell({includeEmpty:true}, (cell,col) => {
+        cell.fill   = {type:'pattern',pattern:'solid',fgColor:{argb:'FFF0FDF4'}};
+        cell.font   = {name:'Arial',size:10,bold:true,color: col===5||col===2 ? {argb:'FF'+colV(totCond)} : {argb:'FF111827'}};
+        cell.border = border;
+        cell.alignment = {vertical:'middle',horizontal:col>=3?'right':'left'};
+      });
+      ws.addRow([]).height = 6;
     });
   }
 
-  // Sección 2
-  html += secHead('2. COMISIONES AUXILIARES (50% DEL CONDUCTOR)');
+  // ── Sección 2 ──
+  secHead('2. COMISIONES AUXILIARES (50% DEL CONDUCTOR)');
   d.summary.forEach(c => {
     const bonoAux = Math.round(c.bono/2);
     const unitAux = c.count>0?Math.round(bonoAux/c.count):0;
-    html += tr(td('  '+c.label,{bold:true}) + td(c.key) + td(c.count,{right:true}) + td(c.key==='pend'?'—':fmtN(unitAux),{right:true,color:colV(unitAux)}) + td(fmtN(bonoAux),{right:true,bold:true,color:colV(bonoAux)}));
+    addRow(['  '+c.label, c.key, c.count, c.key==='pend'?'—':fmtP(unitAux), fmtP(bonoAux)], {
+      cols:[{bold:true},{},{},{color:'#'+colV(unitAux)},{bold:true,color:'#'+colV(bonoAux)}]
+    });
   });
-  html += subRow('Subtotal comisiones auxiliares', d.bonoAyudantes);
+  addRow(['Subtotal comisiones auxiliares','','','', fmtP(d.bonoAyudantes)], {
+    merge4:true, cols:[{bg:'#f8fafc',bold:true},{bg:'#f8fafc'},{bg:'#f8fafc'},{bg:'#f8fafc'},{bg:'#f8fafc',bold:true,color:'#'+colV(d.bonoAyudantes)}], h:19
+  });
 
-  // Sección 3
-  html += secHead(`3. EXTRA-BONO META INDIVIDUAL (≥85% CUMPLIMIENTO)`);
-  html += tr(td('Conductor',{bg:'#f1f5f9',bold:true}) + td('% Cumplimiento',{bg:'#f1f5f9',bold:true}) + td('Meta',{bg:'#f1f5f9',bold:true,right:true}) + td('Extra conductor',{bg:'#f1f5f9',bold:true,right:true}) + td('Extra auxiliar',{bg:'#f1f5f9',bold:true,right:true}));
+  // ── Sección 3 ──
+  secHead(`3. EXTRA-BONO META INDIVIDUAL (≥85% CUMPLIMIENTO)`);
+  addRow(['Conductor','% Cumplimiento','','Extra conductor','Extra auxiliar'], {
+    cols:Array(5).fill({bg:'#f1f5f9',bold:true}), h:19
+  });
   d.extraConds.forEach(c => {
-    html += tr(td(c.nombre,{bold:true}) + td(c.pct+'%  '+(c.alcanza?'✓ Meta alcanzada':'✗ Sin extra-bono'),{color:c.alcanza?green:gray}) + td('',{right:true}) + td(c.alcanza?fmtN(350000):'—',{right:true,color:c.alcanza?green:gray}) + td(c.alcanza?fmtN(175000):'—',{right:true,color:c.alcanza?green:gray}));
+    addRow([c.nombre, c.pct+'%  '+(c.alcanza?'✓ Meta alcanzada':'✗ Sin extra-bono'), '',
+      c.alcanza?fmtP(350000):'—', c.alcanza?fmtP(175000):'—'], {
+      cols:[{bold:true},{color:'#'+(c.alcanza?GREEN:GRAY)},{},{color:'#'+(c.alcanza?GREEN:GRAY)},{color:'#'+(c.alcanza?GREEN:GRAY)}]
+    });
   });
-  html += tr(td('Subtotal extra-bonos',{bg:'#f8fafc',bold:true,colspan:3}) + td(fmtN(d.totalExtraCond),{bg:'#f8fafc',bold:true,right:true,color:colV(d.totalExtraCond)}) + td(fmtN(d.totalExtraAyud),{bg:'#f8fafc',bold:true,right:true,color:colV(d.totalExtraAyud)}));
+  addRow(['Subtotal extra-bonos','','', fmtP(d.totalExtraCond), fmtP(d.totalExtraAyud)], {
+    cols:[{bg:'#f8fafc',bold:true},{bg:'#f8fafc'},{bg:'#f8fafc'},{bg:'#f8fafc',bold:true,color:'#'+colV(d.totalExtraCond)},{bg:'#f8fafc',bold:true,color:'#'+colV(d.totalExtraAyud)}], h:19
+  });
 
-  // Sección 4
-  html += secHead(`4. BONO JEFATURA — Equipo ${d.pctGlobal}%  ${d.bonoJefActivado?'✓ ACTIVADO':'✗ NO activado (requiere ≥85%)'}`);
+  // ── Sección 4 ──
+  secHead(`4. BONO JEFATURA — Equipo ${d.pctGlobal}%  ${d.bonoJefActivado?'✓ ACTIVADO':'✗ NO activado (requiere ≥85%)'}`);
   [['Jefe de Logística',d.bonoJefeVal],['Auxiliar Jefatura 1',d.bonoAux1Val],['Auxiliar Jefatura 2',d.bonoAux2Val]].forEach(([nombre,val])=>{
-    html += tr(td('  '+nombre,{bold:true}) + td('Cumplimiento equipo ≥85%') + td('',{right:true}) + td('',{right:true}) + td(fmtN(val),{right:true,color:colV(val)}));
+    addRow(['  '+nombre,'Cumplimiento equipo ≥85%','','', fmtP(val)], {
+      cols:[{bold:true},{},{},{},{color:'#'+colV(val)}]
+    });
   });
-  html += subRow('Subtotal bono jefatura', d.totalJefatura);
+  addRow(['Subtotal bono jefatura','','','', fmtP(d.totalJefatura)], {
+    merge4:true, cols:[{bg:'#f8fafc',bold:true},{bg:'#f8fafc'},{bg:'#f8fafc'},{bg:'#f8fafc'},{bg:'#f8fafc',bold:true,color:'#'+colV(d.totalJefatura)}], h:19
+  });
 
-  // Gran total
-  html += tr(td('💰  GRAN TOTAL BONIFICACIÓN LOGÍSTICA',{bg:'#1e40af',color:'#ffffff',bold:true,size:12,colspan:4}) + td(fmtN(d.granTotal),{bg:'#1e40af',color:'#ffffff',bold:true,size:14,right:true}));
+  // ── Gran Total ──
+  ws.addRow([]).height = 6;
+  const rGT = ws.addRow(['💰  GRAN TOTAL BONIFICACIÓN LOGÍSTICA','','','', fmtP(d.granTotal)]);
+  rGT.height = 28;
+  ws.mergeCells(`A${rGT.number}:D${rGT.number}`);
+  rGT.eachCell({includeEmpty:true}, (cell, col) => {
+    cell.fill      = {type:'pattern',pattern:'solid',fgColor:{argb:'FF1E40AF'}};
+    cell.font      = {name:'Arial',size: col===5?14:12, bold:true, color:{argb:'FFFFFFFF'}};
+    cell.border    = border;
+    cell.alignment = {vertical:'middle', horizontal: col===5?'right':'left'};
+  });
 
-  html += '</table></body></html>';
-
-  const blob = new Blob([html], {type:'application/vnd.ms-excel;charset=utf-8'});
+  // ── Descargar ──
+  const buffer = await WB.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `Consolidado_Bonificaciones_${mesActivo.replace(/\s/g,'_')}.xls`;
+  a.download = `Consolidado_Bonificaciones_${mesActivo.replace(/\s/g,'_')}.xlsx`;
   a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 function jfGoPage(p) {
