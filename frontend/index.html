@@ -2543,6 +2543,33 @@ function renderJfTable(rows) {
               <td style="padding:8px 14px;text-align:right;font-weight:800;color:${colorBono(bonoEntregas)}">${fmtCurrency(bonoEntregas)}</td>
             </tr>
 
+            <!-- Sección 1b: desglose por conductor -->
+            <tr style="${rowStyle}"><td colspan="5" style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--fg2);background:var(--surface)">1b. Comisiones por entrega — Detalle por conductor</td></tr>
+            ${(() => {
+              const condKeys = [...new Set(rows.filter(f => f.cond_key && f.cond_key !== 'SIN_ASIGNAR').map(f => f.cond_key))].sort();
+              return condKeys.map(ck => {
+                const cRows = rows.filter(f => f.cond_key === ck);
+                const cNombre = conductores.find(c => c.clave === ck)?.nombre || ck;
+                const cBono = cRows.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
+                const cColor = COND_COLORS[ck] || 'var(--accent)';
+                const catRows = CATS.map(cat => {
+                  const sub = cRows.filter(f => { const d = getDias(f); const mt = tipoEsMT(f.tipo); return cat.test(d, mt, f.fec_entr); });
+                  const catBono = sub.reduce((s, f) => s + calcBono(getDias(f), tipoEsMT(f.tipo)), 0);
+                  return sub.length > 0 ? `<tr style="${rowStyle}">
+                    <td style="padding:5px 14px;padding-left:40px;color:var(--fg2)">${cat.label}</td>
+                    <td style="padding:5px 14px;color:var(--fg2);font-size:11px">${cat.key==='d0'?'≤0d':cat.key==='d1'?'1d':cat.key==='d2'?'2d':cat.key==='d5'?'3-5d':cat.key==='dl'?'6-10d':cat.key==='dm'?'11-20d':cat.key==='da'?'>20d':'—'}</td>
+                    <td style="padding:5px 14px;text-align:right;color:var(--fg2)">${sub.length}</td>
+                    <td style="padding:5px 14px;text-align:right;color:${colorBono(sub.length>0?Math.round(catBono/sub.length):0)}">${cat.key==='pend'?'—':fmtCurrency(sub.length>0?Math.round(catBono/sub.length):0)}</td>
+                    <td style="padding:5px 14px;text-align:right;font-weight:600;color:${colorBono(catBono)}">${fmtCurrency(catBono)}</td>
+                  </tr>` : '';
+                }).join('');
+                return `<tr style="${rowStyle}">
+                  <td colspan="4" style="padding:7px 14px;padding-left:24px;font-weight:700;color:${cColor}">▸ ${cNombre}</td>
+                  <td style="padding:7px 14px;text-align:right;font-weight:800;color:${colorBono(cBono)}">${fmtCurrency(cBono)}</td>
+                </tr>${catRows}`;
+              }).join('');
+            })()}
+
             <!-- Sección 2: bono ayudantes -->
             <tr style="${rowStyle}"><td colspan="5" style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--fg2);background:var(--surface)">2. Comisiones Auxiliares (50% del conductor)</td></tr>
             ${summary.map(c => {
@@ -2563,9 +2590,14 @@ function renderJfTable(rows) {
 
             <!-- Sección 3: extra bonos por meta individual -->
             <tr style="${rowStyle}"><td colspan="5" style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--fg2);background:var(--surface)">3. Extra-bono meta individual (≥${metaPct}% cumplimiento)</td></tr>
-            ${extraConds.map(c => `
+            ${extraConds.map(c => {
+              const bc = Number(stats[c.nombre] || stats[conductores.find(cd=>(cd.nombre||cd.clave)===c.nombre)?.clave]?.bono_c || 0);
+              const condKey = conductores.find(cd => (cd.nombre || cd.clave) === c.nombre)?.clave;
+              const bonoC = Number(stats[condKey]?.bono_c || 0);
+              const bonoA = Math.round(bonoC / 2);
+              return `
             <tr style="${rowStyle}">
-              <td style="padding:7px 14px;padding-left:24px;font-weight:600">${c.nombre}</td>
+              <td style="padding:7px 14px;padding-left:24px;font-weight:600">${c.nombre} <span style="font-weight:400;color:var(--fg2);font-size:11px">· comis. ${fmtCurrency(bonoC)}</span></td>
               <td style="padding:7px 14px;font-size:11px;color:${c.alcanza?'#059669':'var(--fg2)'}">
                 ${c.pct}% ${c.alcanza?'✓ Meta alcanzada':'✗ Sin extra-bono'}
               </td>
@@ -2574,10 +2606,11 @@ function renderJfTable(rows) {
               <td style="padding:7px 14px;text-align:right;font-weight:700;color:${colorBono(c.extraCond)}">${fmtCurrency(c.extraCond)}</td>
             </tr>
             <tr style="${rowStyle}">
-              <td style="padding:4px 14px;padding-left:36px;color:var(--fg2);font-size:11px" colspan="3">↳ Extra auxiliar de ${c.nombre}</td>
+              <td style="padding:4px 14px;padding-left:36px;color:var(--fg2);font-size:11px" colspan="2">↳ Auxiliar de ${c.nombre} · comis. ${fmtCurrency(bonoA)}</td>
+              <td style="padding:4px 14px;text-align:right;color:var(--fg2)">—</td>
               <td style="padding:4px 14px;text-align:right;color:${colorBono(c.extraAyud)}">${c.alcanza?fmtCurrency(BONO_EXTRA_AYUD):'—'}</td>
               <td style="padding:4px 14px;text-align:right;font-weight:600;color:${colorBono(c.extraAyud)}">${fmtCurrency(c.extraAyud)}</td>
-            </tr>`).join('')}
+            </tr>`;}).join('')}
             <tr style="${subStyle}">
               <td colspan="4" style="padding:8px 14px;font-weight:700">Subtotal extra-bonos (conductores + auxiliares)</td>
               <td style="padding:8px 14px;text-align:right;font-weight:800;color:${colorBono(totalExtraCond+totalExtraAyud)}">${fmtCurrency(totalExtraCond+totalExtraAyud)}</td>
@@ -2618,10 +2651,19 @@ function renderJfTable(rows) {
         <button class="form-select" onclick="exportarConsolidadoExcel()" style="cursor:pointer;background:var(--ok);color:#fff;border-color:var(--ok);font-weight:600;padding:6px 14px">⬇ Exportar consolidado Excel</button>
       </div>`;
 
+    // Datos por conductor para el Excel
+    const condDesglose = condActivos.map(c => {
+      const s = stats[c.clave] || {};
+      const bc = Number(s.bono_c || 0);
+      const ba = Math.round(bc / 2);
+      return { nombre: c.nombre || c.clave, bono_c: bc, bono_a: ba,
+               pct: s.pct_tiempo ?? 0, entregadas: s.entregadas || 0 };
+    });
+
     // Guardar datos para exportar
     window._consolidadoData = { summary, bonoEntregas, bonoAyudantes, extraConds,
       totalExtraCond, totalExtraAyud, bonoJefActivado, pctGlobal, bonoJefeVal,
-      bonoAux1Val, bonoAux2Val, totalJefatura, granTotal, total };
+      bonoAux1Val, bonoAux2Val, totalJefatura, granTotal, total, condDesglose };
   }
 }
 
@@ -2646,10 +2688,21 @@ function exportarConsolidadoExcel() {
   rows.push(['Subtotal comisiones conductores', '', '', '', cur(d.bonoEntregas)]);
   rows.push([]);
 
+  // Sección 1b: comisiones por conductor
+  rows.push(['1b. COMISIONES POR ENTREGA — DESGLOSE POR CONDUCTOR']);
+  rows.push(['Conductor', 'Entregas', '% Cumplimiento', 'Comisión conductor', 'Comisión auxiliar']);
+  let totBC = 0, totBA = 0;
+  (d.condDesglose || []).forEach(c => {
+    totBC += c.bono_c; totBA += c.bono_a;
+    rows.push([c.nombre, c.entregadas, c.pct + '%', cur(c.bono_c), cur(c.bono_a)]);
+  });
+  rows.push(['Subtotal por conductor', '', '', cur(totBC), cur(totBA)]);
+  rows.push([]);
+
   // Sección 2
   rows.push(['2. COMISIONES AUXILIARES (50% DEL CONDUCTOR)']);
   rows.push(['Concepto', 'Detalle', 'Cant.', 'Unitario', 'Subtotal']);
-  rows.push(['Bono ayudante', '50% de comisiones conductor', '', '50%', cur(d.bonoAyudantes)]);
+  rows.push(['Bono auxiliar conductor', '50% de comisiones conductor', '', '50%', cur(d.bonoAyudantes)]);
   rows.push(['Subtotal comisiones auxiliares', '', '', '', cur(d.bonoAyudantes)]);
   rows.push([]);
 
