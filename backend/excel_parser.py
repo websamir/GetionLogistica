@@ -215,11 +215,10 @@ def _parse_facturas(data_rows):
         fec_promesa = fmt_excel_date(col(r, 'fecpromesaentrega', 'fec_promesa_entrega', 'fechapromesa'))
         fec_entr    = fmt_excel_date(col(r, 'fecentreganegocio', 'fec_entrega_logistica', 'fechaentrega', 'fecha_entrega'))
 
-        # Diferencia días — recalcular en días hábiles si hay ambas fechas
-        dif_raw  = col(r, 'diferenciafechadias', 'diferencia_fecha_dias', 'difdias')
-        dif_dias = float(dif_raw) if dif_raw not in (None, '', 'None') else None
-        if fec_promesa and fec_entr:
-            dif_dias = dias_habiles(fec_promesa, fec_entr)
+        # Diferencia días — días hábiles desde fec_fact hasta fec_entr
+        dif_dias = None
+        if fec_fact and fec_entr:
+            dif_dias = dias_habiles(fec_fact, fec_entr)
         dif_h_r  = col(r, 'diferenciafechahoras', 'diferencia_fecha_horas')
         dif_horas= float(dif_h_r) if dif_h_r not in (None, '', 'None') else None
 
