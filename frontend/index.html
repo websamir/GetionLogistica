@@ -2719,7 +2719,7 @@ async function exportarConsolidadoExcel() {
   // ── Título ──
   addRow([`DESGLOSE COMPLETO DE BONIFICACIONES — ${d.total} facturas · ${mesActivo}`,'','','',''],
     { bg:'#1e293b', color:'#f8fafc', bold:true, size:12, merge:true, h:28 });
-  addRow(['CONCEPTO','DETALLE','CANT.','UNITARIO','SUBTOTAL'], {
+  addRow(['CONCEPTO','','CANT.','UNITARIO','SUBTOTAL'], {
     cols: Array(5).fill({ bg:'#334155', color:'#cbd5e1', bold:true }), h:20
   });
 
@@ -2727,7 +2727,7 @@ async function exportarConsolidadoExcel() {
   secHead('1. COMISIONES POR ENTREGA — CONDUCTORES');
   d.summary.forEach(c => {
     const unit = c.count > 0 ? Math.round(c.bono / c.count) : 0;
-    addRow(['  '+c.label, c.key, c.count, c.key==='pend'?'—':fmtP(unit), fmtP(c.bono)], {
+    addRow(['  '+c.label, '', c.count, c.key==='pend'?'—':fmtP(unit), fmtP(c.bono)], {
       cols:[{bold:true},{},{},{color:'#'+colV(unit)},{bold:true,color:'#'+colV(c.bono)}]
     });
   });
@@ -2791,7 +2791,7 @@ async function exportarConsolidadoExcel() {
   d.summary.forEach(c => {
     const bonoAux = Math.round(c.bono/2);
     const unitAux = c.count>0?Math.round(bonoAux/c.count):0;
-    addRow(['  '+c.label, c.key, c.count, c.key==='pend'?'—':fmtP(unitAux), fmtP(bonoAux)], {
+    addRow(['  '+c.label, '', c.count, c.key==='pend'?'—':fmtP(unitAux), fmtP(bonoAux)], {
       cols:[{bold:true},{},{},{color:'#'+colV(unitAux)},{bold:true,color:'#'+colV(bonoAux)}]
     });
   });
